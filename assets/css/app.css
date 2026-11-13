@@ -103,7 +103,11 @@ body {
 }
 .field textarea { display: block; resize: vertical; font-size: 13px; line-height: 1.4; }
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.check.sub { margin-left: 26px; }
+.check.sub, div.sub { margin-left: 26px; }
+.model-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.panel-foot > .btn { margin-top: 14px; }
+#preview .sheet { flex: none; box-shadow: 0 1px 3px rgba(21, 43, 69, .18), 0 8px 24px rgba(21, 43, 69, .10); }
+#preview .sheet .page { box-shadow: none; }
 .group > summary:focus-visible { outline: 3px solid #8fc3cf; outline-offset: 2px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid #8fc3cf; outline-offset: 0; border-color: var(--ui-teal); }
 .field input:invalid { border-color: var(--ui-danger); }

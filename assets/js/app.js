@@ -7,8 +7,9 @@
   var Pages = global.PlannerPages;
 
   var MAX_LOGO_BYTES = 2 * 1024 * 1024;
+  var MAX_MODEL_BYTES = 6 * 1024 * 1024;
   var LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
-  var PAGE_WIDTH_PX = 210 * 96 / 25.4; // largura do A4 em px CSS
+  var MM = 96 / 25.4; // px CSS por milímetro
 
   var form = document.getElementById('options');
   var preview = document.getElementById('preview');
@@ -17,7 +18,12 @@
   var logoFile = document.getElementById('logo-file');
   var logoMsg = document.getElementById('logo-msg');
   var saveMsg = document.getElementById('save-msg');
-  var datesMsg = document.getElementById('dates-msg');
+  var modelFile = document.getElementById('model-file');
+  var modelMsg = document.getElementById('model-msg');
+
+  // Regra @page: A4 em pé ou, no livreto, deitado.
+  var pageRule = document.createElement('style');
+  document.head.appendChild(pageRule);
 
   var cfg = Config.load();
   var renderTimer = null;
@@ -71,26 +77,73 @@
     });
   }
 
+  // Mostra, abaixo de cada campo de texto livre, as linhas que não puderam ser lidas.
+  function showLineErrors(errors) {
+    form.querySelectorAll('[data-errors]').forEach(function (node) {
+      var bad = errors[node.getAttribute('data-errors')] || [];
+      var text = '';
+      if (bad.length === 1) {
+        text = 'Não entendi a linha ' + bad[0] + '. Ela foi ignorada.';
+      } else if (bad.length > 1) {
+        text = 'Não entendi as linhas ' + bad.slice(0, 8).join(', ') + (bad.length > 8 ? '…' : '') + '. Elas foram ignoradas.';
+      }
+      showMsg(node, text);
+    });
+  }
+
+  // ----- Livreto: duas páginas A5 por folha A4, na ordem de dobra -----
+
+  function blankPage() {
+    var page = document.createElement('section');
+    page.className = 'page blank';
+    return page;
+  }
+
+  // Cada folha recebe [esquerda, direita]. Para N páginas (múltiplo de 4), a folha i tem
+  // na frente N-2i e 2i+1 e, no verso, 2i+2 e N-2i-1.
+  function imposeBooklet(pages) {
+    pages = pages.slice();
+    while (pages.length % 4 !== 0) { pages.push(blankPage()); }
+    var total = pages.length;
+    var sheets = [];
+    function sheet(left, right) {
+      var node = document.createElement('div');
+      node.className = 'sheet';
+      node.appendChild(pages[left]);
+      node.appendChild(pages[right]);
+      sheets.push(node);
+    }
+    for (var i = 0; i < total / 4; i++) {
+      sheet(total - 1 - 2 * i, 2 * i);
+      sheet(2 * i + 1, total - 2 - 2 * i);
+    }
+    return sheets;
+  }
+
   // ----- Pré-visualização -----
 
   function fitPreview() {
+    var width = (cfg.booklet ? 297 : 210) * MM;
     var available = preview.parentElement.clientWidth - 32;
-    var zoom = Math.min(1, Math.max(0.2, available / PAGE_WIDTH_PX));
+    var zoom = Math.min(1, Math.max(0.2, available / width));
     preview.style.zoom = zoom.toFixed(3);
   }
 
   function render() {
     var result = Pages.build(cfg);
+    var nodes = cfg.booklet ? imposeBooklet(result.pages) : result.pages;
     var frag = document.createDocumentFragment();
-    result.pages.forEach(function (page) { frag.appendChild(page); });
+    nodes.forEach(function (node) { frag.appendChild(node); });
     preview.replaceChildren(frag);
-    pageCount.textContent = result.pages.length + ' páginas';
+    pageRule.textContent = '@page { size: A4 ' + (cfg.booklet ? 'landscape' : 'portrait') + '; margin: 0; }';
+    fitPreview();
+
+    pageCount.textContent = result.pages.length + ' páginas' +
+      (cfg.booklet ? ' em ' + (nodes.length / 2) + ' folhas A4' : '');
     // O título da aba vira o nome sugerido do arquivo PDF.
     document.title = (cfg.title.trim() || 'Planner') + ' ' + result.yearLabel.replace('/', '-') +
       (cfg.orgName.trim() ? ' ' + cfg.orgName.trim() : '');
-    var bad = result.customErrors;
-    showMsg(datesMsg, bad.length ? 'Não entendi ' + (bad.length === 1 ? 'a linha ' : 'as linhas ') +
-      bad.join(', ') + '. Ela' + (bad.length === 1 ? ' foi ignorada.' : 's foram ignoradas.') : '');
+    showLineErrors(result.errors);
   }
 
   function persist() {
@@ -102,7 +155,8 @@
     }
   }
 
-  function onChange() {
+  function onChange(event) {
+    if (event.target === logoFile || event.target === modelFile) { return; }
     readForm();
     updateDependents();
     persist();
@@ -162,14 +216,66 @@
     render();
   }
 
+  // ----- Exportar e importar modelo -----
+
+  function onExport() {
+    readForm();
+    var data = JSON.stringify({ app: 'planner-cecape', version: 1, config: cfg }, null, 2);
+    var url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'modelo-planner-' + cfg.year + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showMsg(modelMsg, 'Modelo exportado. Procure o arquivo na pasta de downloads.', true);
+  }
+
+  function onImport() {
+    var file = modelFile.files && modelFile.files[0];
+    modelFile.value = '';
+    if (!file) { return; }
+    if (file.size > MAX_MODEL_BYTES) {
+      showMsg(modelMsg, 'O arquivo é grande demais para ser um modelo deste gerador.');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onerror = function () {
+      showMsg(modelMsg, 'Não foi possível ler o arquivo. Tente novamente.');
+    };
+    reader.onload = function () {
+      var data;
+      try {
+        data = JSON.parse(reader.result);
+      } catch (e) {
+        data = null;
+      }
+      if (!data || data.app !== 'planner-cecape' || !data.config || typeof data.config !== 'object') {
+        showMsg(modelMsg, 'Este arquivo não é um modelo exportado por este gerador.');
+        return;
+      }
+      // sanitize() descarta qualquer valor fora do esperado.
+      cfg = Config.sanitize(data.config);
+      fillForm();
+      persist();
+      render();
+      showMsg(modelMsg, 'Modelo importado.', true);
+    };
+    reader.readAsText(file);
+  }
+
   // ----- Ações -----
 
   function onReset() {
-    if (!global.confirm('Restaurar todas as opções para o modelo original?')) { return; }
+    if (!global.confirm('Restaurar todas as opções para o modelo original? As listas digitadas (datas, turmas) serão apagadas.')) {
+      return;
+    }
     cfg = Config.reset();
     fillForm();
     showMsg(logoMsg, '');
     showMsg(saveMsg, '');
+    showMsg(modelMsg, '');
     render();
   }
 
@@ -185,12 +291,13 @@
   form.addEventListener('focusout', onBlur);
   form.addEventListener('submit', function (event) { event.preventDefault(); });
   logoFile.addEventListener('change', onLogoChosen);
+  modelFile.addEventListener('change', onImport);
   document.getElementById('logo-reset').addEventListener('click', onLogoReset);
+  document.getElementById('btn-export').addEventListener('click', onExport);
   document.getElementById('btn-reset').addEventListener('click', onReset);
   document.getElementById('btn-print').addEventListener('click', onPrint);
   global.addEventListener('resize', fitPreview);
 
   fillForm();
-  fitPreview();
   render();
 })(window);

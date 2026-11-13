@@ -90,11 +90,17 @@
     var years = [];
     for (var y = first.y - 1; y <= last.y + 1; y++) { years.push(y); } // inclui as semanas que cruzam a virada
 
+    var none = { items: [], errors: [] };
     var custom = Cal.parseCustomDates(cfg.customDates);
+    var municipal = cfg.showHolidays && cfg.showMunicipalHolidays ? Cal.parseCustomDates(cfg.municipalHolidays) : none;
+    var periods = Cal.parseRanges(cfg.schoolPeriods, 'Período letivo');
+    var breaks = Cal.parseRanges(cfg.schoolBreaks, 'Recesso');
+    var recurring = Cal.parseRecurring(cfg.recurringEvents);
+    var classes = cfg.showAttendance ? Cal.parseClasses(cfg.classes) : none;
     var from = new Date(first.y, first.m, 1);
     var to = new Date(last.y, last.m, Cal.daysInMonth(last.y, last.m));
 
-    return {
+    var ctx = {
       cfg: cfg,
       months: months,
       from: from,
@@ -102,14 +108,104 @@
       multiYear: first.y !== last.y,
       yearLabel: first.y === last.y ? String(first.y) : first.y + '/' + last.y,
       cols: Cal.columnDows(cfg.weekStart),
+      contentWidth: CONTENT_WIDTH - cfg.bindingMargin,
       events: Cal.buildEvents(years, {
         holidays: cfg.showHolidays,
         optional: cfg.showHolidays && cfg.showOptionalHolidays,
-        custom: custom.items
+        state: cfg.showHolidays && cfg.showStateHoliday,
+        lists: [{ items: municipal.items, type: 'holiday' }, { items: custom.items, type: 'custom' }]
       }),
       moon: cfg.showMoon ? Cal.moonPhases(new Date(first.y, first.m - 1, 1), new Date(last.y, last.m + 1, 28)) : {},
-      customErrors: custom.errors
+      periods: periods.items,
+      breaks: breaks.items,
+      hasSchool: periods.items.length > 0,
+      classes: classes.items,
+      meetings: months.map(function () { return []; }),
+      // Linhas que não puderam ser lidas, por campo do formulário.
+      errors: {
+        customDates: custom.errors,
+        municipalHolidays: municipal.errors,
+        schoolPeriods: periods.errors,
+        schoolBreaks: breaks.errors,
+        recurringEvents: recurring.errors,
+        classes: classes.errors
+      }
     };
+    applySchoolCalendar(ctx, recurring.items);
+    return ctx;
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  function rangeAt(list, date) {
+    for (var i = 0; i < list.length; i++) {
+      if (date >= list[i].from && date <= list[i].to) { return list[i]; }
+    }
+    return null;
+  }
+
+  // Situação do dia no calendário letivo.
+  // Dia letivo = segunda a sexta, dentro de um período letivo, fora de recesso e sem feriado ou ponto facultativo.
+  function dayStatus(ctx, date) {
+    var list = ctx.events[Cal.key(date.getFullYear(), date.getMonth(), date.getDate())] || [];
+    var off = list.some(function (ev) { return ev.type === 'holiday' || ev.type === 'optional'; });
+    var brk = rangeAt(ctx.breaks, date);
+    var period = rangeAt(ctx.periods, date);
+    var dow = date.getDay();
+    return {
+      off: off,
+      brk: brk,
+      period: period,
+      school: !!period && !brk && !off && dow >= 1 && dow <= 5
+    };
+  }
+
+  function countSchoolDays(ctx, from, to) {
+    var total = 0;
+    for (var d = new Date(from.getFullYear(), from.getMonth(), from.getDate()); d <= to;
+      d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      if (dayStatus(ctx, d).school) { total++; }
+    }
+    return total;
+  }
+
+  // Acrescenta ao calendário os marcos dos períodos, os recessos e os eventos recorrentes,
+  // e separa as reuniões que ganham página de pauta/ata.
+  function applySchoolCalendar(ctx, recurring) {
+    var cfg = ctx.cfg;
+    var keyword = cfg.meetingKeyword.trim().toLowerCase();
+    var monthIndex = {};
+    ctx.months.forEach(function (mo, i) { monthIndex[mo.y + '-' + mo.m] = i; });
+
+    for (var d = new Date(ctx.from.getTime()); d <= ctx.to;
+      d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      var k = Cal.key(d.getFullYear(), d.getMonth(), d.getDate());
+      var st = dayStatus(ctx, d);
+      var list = ctx.events[k] || [];
+
+      if (st.period && sameDay(d, st.period.from)) { list.push({ text: 'Início: ' + st.period.text, type: 'period' }); }
+      if (st.period && sameDay(d, st.period.to)) { list.push({ text: 'Fim: ' + st.period.text, type: 'period' }); }
+      if (st.brk && (sameDay(d, st.brk.from) || d.getDate() === 1)) { list.push({ text: st.brk.text, type: 'break' }); }
+
+      // Recorrentes: não caem em feriado nem recesso; havendo períodos letivos, só dentro deles.
+      if (!st.off && !st.brk && (!ctx.hasSchool || st.period)) {
+        for (var r = 0; r < recurring.length; r++) {
+          if (Cal.recurringMatches(recurring[r], d)) { list.push({ text: recurring[r].text, type: 'recurring' }); }
+        }
+      }
+      if (list.length) { ctx.events[k] = list; }
+
+      if (cfg.showMeetings && keyword) {
+        for (var e = 0; e < list.length; e++) {
+          var ev = list[e];
+          if ((ev.type === 'custom' || ev.type === 'recurring') && ev.text.toLowerCase().indexOf(keyword) >= 0) {
+            ctx.meetings[monthIndex[d.getFullYear() + '-' + d.getMonth()]].push({ date: new Date(d.getTime()), text: ev.text });
+          }
+        }
+      }
+    }
   }
 
   function eventsOn(ctx, y, m, d) { return ctx.events[Cal.key(y, m, d)] || []; }
@@ -145,6 +241,8 @@
     var cfg = ctx.cfg;
     var page = el('section', 'page inner ' + (opts.quarter || 'q1'));
     var mirror = cfg.logoInner === 'top-left';
+    if (opts.id) { page.id = opts.id; }
+    if (cfg.showLinks) { page.appendChild(navTabs(ctx, opts.current)); }
 
     var head = el('div', 'head' + (mirror ? ' mirror' : ''));
     head.appendChild(bar());
@@ -164,6 +262,28 @@
     foot.appendChild(el('span', 'page-number'));
     page.appendChild(foot);
     return page;
+  }
+
+  function monthId(mo) { return 'mes-' + mo.y + '-' + (mo.m + 1); }
+  function weekId(start) { return 'semana-' + start.getFullYear() + '-' + (start.getMonth() + 1) + '-' + start.getDate(); }
+
+  function link(target, className, text) {
+    var a = el('a', className, text);
+    a.href = '#' + target;
+    return a;
+  }
+
+  // Abas na borda externa: levam à visão anual e a cada mês. No PDF viram links clicáveis.
+  function navTabs(ctx, current) {
+    var tabs = el('nav', 'tabs');
+    if (ctx.cfg.showYearView) {
+      tabs.appendChild(link('visao', 'tab q1' + (current === 'visao' ? ' on' : ''), 'Ano'));
+    }
+    ctx.months.forEach(function (mo) {
+      var id = monthId(mo);
+      tabs.appendChild(link(id, 'tab ' + quarterClass(mo.m) + (current === id ? ' on' : ''), MONTHS_SHORT[mo.m]));
+    });
+    return tabs;
   }
 
   // Área de conteúdo entre o cabeçalho e o rodapé.
@@ -214,6 +334,8 @@
     var pages = [];
     for (var start = 0; start < ctx.months.length; start += 12) {
       var page = innerPage(ctx, {
+        id: start === 0 ? 'visao' : null,
+        current: 'visao',
         eyebrow: titleWithYear(ctx),
         title: ctx.months.length === 12 ? 'Visão anual' : 'Visão geral'
       });
@@ -229,13 +351,15 @@
 
   function miniMonth(ctx, mo) {
     var mini = el('div', 'mini ' + quarterClass(mo.m));
-    mini.appendChild(el('div', 'mini-name', MONTHS[mo.m] + (ctx.multiYear ? ' ' + mo.y : '')));
+    var miniLabel = MONTHS[mo.m] + (ctx.multiYear ? ' ' + mo.y : '');
+    mini.appendChild(ctx.cfg.showLinks ? link(monthId(mo), 'mini-name', miniLabel) : el('div', 'mini-name', miniLabel));
     var mg = el('div', 'mini-grid');
     ctx.cols.forEach(function (dow) { mg.appendChild(el('b', '', DOW_LETTER[dow])); });
     Cal.monthWeeks(mo.y, mo.m, ctx.cfg.weekStart).forEach(function (week) {
       week.forEach(function (day, col) {
         var cls = isWeekend(ctx.cols[col]) ? 'we' : '';
         if (day !== null && isHoliday(eventsOn(ctx, mo.y, mo.m, day))) { cls += ' hol'; }
+        if (day !== null && rangeAt(ctx.breaks, new Date(mo.y, mo.m, day))) { cls += ' brk'; }
         mg.appendChild(el('span', cls.trim(), day === null ? '' : String(day)));
       });
     });
@@ -248,10 +372,13 @@
   function monthPage(ctx, mo) {
     var cfg = ctx.cfg;
     var page = innerPage(ctx, {
+      id: monthId(mo),
+      current: monthId(mo),
       quarter: quarterClass(mo.m),
       eyebrow: 'Calendário mensal  /  ' + mo.y,
       title: MONTHS[mo.m]
     });
+    var linkWeeks = cfg.showLinks && cfg.showWeekly;
 
     var grid = el('div', 'month-grid' + (cfg.bordersOnlyDates ? ' only-dates' : '') +
       (cfg.showWeekNumbers ? ' with-weeks' : ''));
@@ -274,9 +401,12 @@
         var cell = el('div', cls);
         if (day !== null) {
           var list = eventsOn(ctx, mo.y, mo.m, day);
+          var date = new Date(mo.y, mo.m, day);
           if (isHoliday(list)) { cell.className += ' hol'; }
+          if (rangeAt(ctx.breaks, date)) { cell.className += ' brk'; }
           var num = el('div', 'num');
-          num.appendChild(el('span', '', String(day)));
+          num.appendChild(linkWeeks ?
+            link(weekId(Cal.weekStartOf(date, cfg.weekStart)), '', String(day)) : el('span', '', String(day)));
           var phase = ctx.moon[Cal.key(mo.y, mo.m, day)];
           if (phase) { num.appendChild(moonIcon(phase)); }
           cell.appendChild(num);
@@ -287,14 +417,20 @@
     });
     page.appendChild(grid);
 
-    if (cfg.showMoon) {
+    if (cfg.showMoon || ctx.hasSchool) {
       var legend = el('div', 'legend');
-      ['new', 'first', 'full', 'last'].forEach(function (phase) {
-        var item = el('span');
-        item.appendChild(moonIcon(phase));
-        item.appendChild(document.createTextNode(MOON_LABEL[phase]));
-        legend.appendChild(item);
-      });
+      if (cfg.showMoon) {
+        ['new', 'first', 'full', 'last'].forEach(function (phase) {
+          var item = el('span');
+          item.appendChild(moonIcon(phase));
+          item.appendChild(document.createTextNode(MOON_LABEL[phase]));
+          legend.appendChild(item);
+        });
+      }
+      if (ctx.hasSchool) {
+        var last = new Date(mo.y, mo.m, Cal.daysInMonth(mo.y, mo.m));
+        legend.appendChild(el('strong', '', 'Dias letivos: ' + countSchoolDays(ctx, new Date(mo.y, mo.m, 1), last)));
+      }
       page.appendChild(legend);
     }
 
@@ -378,8 +514,10 @@
     // A semana ISO é identificada pela quinta-feira que ela contém.
     var thursday = days.filter(function (d) { return d.getDay() === 4; })[0];
     var page = innerPage(ctx, {
+      id: weekId(start),
       quarter: quarterClass(thursday.getMonth()),
-      eyebrow: 'Semana ' + Cal.isoWeek(thursday) + '  /  ' + thursday.getFullYear(),
+      eyebrow: (cfg.weeklyLayout === 'lesson' ? 'Plano de aula  /  semana ' : 'Semana ') +
+        Cal.isoWeek(thursday) + '  /  ' + thursday.getFullYear(),
       title: weekRange(start)
     });
     var area = contentArea(page);
@@ -398,7 +536,17 @@
       return box;
     }
 
-    if (cfg.weeklyLayout === 'columns') {
+    if (cfg.weeklyLayout === 'lesson') {
+      // Plano de aula: uma linha por dia útil, com campo para o código da habilidade da BNCC.
+      var plan = el('div', 'lesson');
+      ['Dia', 'Turma / componente', 'Habilidade BNCC (código)', 'Objetivos e conteúdo', 'Atividades e recursos', 'Avaliação']
+        .forEach(function (text) { plan.appendChild(el('div', 'l-head', text)); });
+      days.filter(function (d) { return !isWeekend(d.getDay()); }).forEach(function (d) {
+        plan.appendChild(dayLabel(d, false));
+        repeat(plan, 5, function () { return el('div', 'l-cell'); });
+      });
+      area.appendChild(plan);
+    } else if (cfg.weeklyLayout === 'columns') {
       var grid = el('div', 'week-cols');
       grid.appendChild(el('div', 'w-corner'));
       days.forEach(function (d) { grid.appendChild(dayLabel(d, false)); });
@@ -452,10 +600,154 @@
     return page;
   }
 
-  // ----- Folha de anotações (linhas, pontilhado, quadriculado ou em branco) -----
+  // ----- Calendário letivo: página de resumo -----
 
-  function patternSheet(style, gap) {
-    var cols = Math.floor(CONTENT_WIDTH / gap);
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function shortDate(d) { return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear(); }
+  function longDate(d) {
+    return DOW_LONG[d.getDay()] + ', ' + d.getDate() + ' de ' + MONTHS[d.getMonth()].toLowerCase() + ' de ' + d.getFullYear();
+  }
+
+  function table(className, head) {
+    var t = el('div', 'tbl ' + className);
+    head.forEach(function (text) { t.appendChild(el('div', 'th', text)); });
+    return t;
+  }
+
+  function schoolSummaryPage(ctx) {
+    var page = innerPage(ctx, { eyebrow: titleWithYear(ctx), title: 'Calendário letivo' });
+    var area = contentArea(page);
+    var total = 0;
+
+    if (ctx.periods.length) {
+      area.appendChild(el('h3', 'section', 'Períodos letivos'));
+      var t = table('t-periods', ['Período', 'Início', 'Fim', 'Dias letivos']);
+      ctx.periods.slice(0, 8).forEach(function (p) {
+        var n = countSchoolDays(ctx, p.from, p.to);
+        total += n;
+        [p.text, shortDate(p.from), shortDate(p.to), String(n)].forEach(function (text) { t.appendChild(el('div', 'td', text)); });
+      });
+      ['Total', '', '', String(total)].forEach(function (text) { t.appendChild(el('div', 'td total', text)); });
+      area.appendChild(t);
+    }
+
+    if (ctx.breaks.length) {
+      area.appendChild(el('h3', 'section', 'Recessos e férias'));
+      var tb = table('t-breaks', ['Descrição', 'Início', 'Fim']);
+      ctx.breaks.slice(0, 6).forEach(function (b) {
+        [b.text, shortDate(b.from), shortDate(b.to)].forEach(function (text) { tb.appendChild(el('div', 'td', text)); });
+      });
+      area.appendChild(tb);
+    }
+
+    // Feriados e pontos facultativos do período, em ordem de data.
+    var days = [];
+    for (var d = new Date(ctx.from.getTime()); d <= ctx.to; d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1)) {
+      eventsOn(ctx, d.getFullYear(), d.getMonth(), d.getDate()).forEach(function (ev) {
+        if (ev.type === 'holiday' || ev.type === 'optional') { days.push({ date: new Date(d.getTime()), text: ev.text }); }
+      });
+    }
+    if (days.length) {
+      area.appendChild(el('h3', 'section', 'Feriados e pontos facultativos'));
+      var list = el('div', 'holiday-list');
+      days.slice(0, 30).forEach(function (h) {
+        var item = el('div', 'h-item');
+        item.appendChild(el('b', '', pad2(h.date.getDate()) + '/' + pad2(h.date.getMonth() + 1) + ' ' + DOW_SHORT[h.date.getDay()].toLowerCase()));
+        item.appendChild(el('span', '', h.text));
+        list.appendChild(item);
+      });
+      area.appendChild(list);
+    }
+
+    if (!ctx.periods.length && !ctx.breaks.length && !days.length) {
+      area.appendChild(el('p', 'empty-note', 'Informe os períodos letivos, os recessos ou ative os feriados para preencher esta página.'));
+    }
+    return page;
+  }
+
+  // ----- Pauta e ata de reunião (uma página por reunião encontrada no calendário) -----
+
+  function meetingPage(ctx, meeting) {
+    var page = innerPage(ctx, {
+      quarter: quarterClass(meeting.date.getMonth()),
+      eyebrow: longDate(meeting.date),
+      title: meeting.text
+    });
+    var area = contentArea(page, 'meeting');
+    var info = el('div', 'm-info');
+    ['Horário', 'Local', 'Coordenação'].forEach(function (text) {
+      var field = el('div', 'm-field');
+      field.appendChild(el('span', '', text));
+      field.appendChild(el('i'));
+      info.appendChild(field);
+    });
+    area.appendChild(info);
+    area.appendChild(el('h3', 'section', 'Pauta'));
+    area.appendChild(checkList(4));
+    area.appendChild(el('h3', 'section', 'Registro e deliberações'));
+    area.appendChild(writeLines(11, 7.5));
+    area.appendChild(el('h3', 'section', 'Encaminhamentos'));
+    var t = table('t-actions', ['Ação', 'Responsável', 'Prazo']);
+    repeat(t, 15, function () { return el('div', 'td'); });
+    area.appendChild(t);
+    return page;
+  }
+
+  // ----- Lista de chamada: colunas com as datas reais das aulas da turma no mês -----
+
+  var ATTENDANCE_ROWS = 34;
+
+  function attendancePages(ctx, mo) {
+    var pages = [];
+    var total = Cal.daysInMonth(mo.y, mo.m);
+    ctx.classes.forEach(function (cls) {
+      var dates = [];
+      for (var d = 1; d <= total; d++) {
+        var date = new Date(mo.y, mo.m, d);
+        if (cls.dows.indexOf(date.getDay()) < 0) { continue; }
+        var st = dayStatus(ctx, date);
+        // Com períodos letivos informados, valem só os dias letivos; sem eles, pulam-se feriados e recessos.
+        var counts = ctx.hasSchool ? (st.school || (!!st.period && !st.brk && !st.off)) : (!st.off && !st.brk);
+        if (counts) { dates.push(date); }
+      }
+      if (!dates.length) { return; }
+
+      var names = cls.students.length ? cls.students : null;
+      var rows = names ? names.length : ATTENDANCE_ROWS;
+      for (var start = 0; start < rows; start += ATTENDANCE_ROWS) {
+        var page = innerPage(ctx, {
+          quarter: quarterClass(mo.m),
+          eyebrow: 'Chamada  /  ' + MONTHS[mo.m] + ' ' + mo.y,
+          title: cls.name
+        });
+        var area = contentArea(page);
+        var t = el('div', 'attendance');
+        t.style.gridTemplateColumns = '7mm 46mm repeat(' + dates.length + ', 1fr) 10mm';
+        t.appendChild(el('div', 'th', 'Nº'));
+        t.appendChild(el('div', 'th name', 'Nome'));
+        dates.forEach(function (date) {
+          var th = el('div', 'th date');
+          th.appendChild(el('b', '', pad2(date.getDate())));
+          th.appendChild(el('span', '', DOW_SHORT[date.getDay()]));
+          t.appendChild(th);
+        });
+        t.appendChild(el('div', 'th', 'Faltas'));
+        for (var i = start; i < Math.min(rows, start + ATTENDANCE_ROWS); i++) {
+          t.appendChild(el('div', 'td n', String(i + 1)));
+          t.appendChild(el('div', 'td name', names ? names[i] : ''));
+          repeat(t, dates.length + 1, function () { return el('div', 'td'); });
+        }
+        area.appendChild(t);
+        pages.push(page);
+      }
+    });
+    return pages;
+  }
+
+  // ----- Folha de anotações (linhas, pontilhado, quadriculado, Cornell ou em branco) -----
+
+  function patternSheet(style, gap, width) {
+    var cols = Math.floor(width / gap);
     var rows = Math.floor(RULED_HEIGHT / gap);
     var w = cols * gap;
     var h = rows * gap;
@@ -491,9 +783,23 @@
       ruled.style.setProperty('--rule-gap', cfg.ruledGap + 'mm');
       repeat(ruled, Math.floor(RULED_HEIGHT / cfg.ruledGap), function () { return el('i'); });
       page.appendChild(ruled);
+    } else if (cfg.ruledStyle === 'cornell') {
+      // Método Cornell: coluna de tópicos à esquerda, anotações à direita e resumo no rodapé.
+      var cornell = el('div', 'cornell');
+      var cues = el('div', 'c-cues');
+      cues.appendChild(el('span', 'c-tag', 'Tópicos e perguntas'));
+      var notes = el('div', 'c-notes');
+      notes.appendChild(el('span', 'c-tag', 'Anotações'));
+      notes.appendChild(writeLines(Math.floor(160 / cfg.ruledGap), cfg.ruledGap));
+      var summary = el('div', 'c-summary');
+      summary.appendChild(el('span', 'c-tag', 'Resumo'));
+      cornell.appendChild(cues);
+      cornell.appendChild(notes);
+      cornell.appendChild(summary);
+      page.appendChild(cornell);
     } else if (cfg.ruledStyle !== 'blank') {
       var holder = el('div', 'pattern-holder');
-      holder.appendChild(patternSheet(cfg.ruledStyle, cfg.ruledGap));
+      holder.appendChild(patternSheet(cfg.ruledStyle, cfg.ruledGap, ctx.contentWidth));
       page.appendChild(holder);
     }
     return page;
@@ -506,6 +812,7 @@
     var ctx = createContext(cfg);
     var pages = [coverPage(ctx)];
     if (cfg.showYearView) { pages = pages.concat(yearPages(ctx)); }
+    if (cfg.showSchoolSummary) { pages.push(schoolSummaryPage(ctx)); }
     if (cfg.showGoals) { pages.push(goalsPage(ctx)); }
 
     var weeks = cfg.showWeekly ? weeksByMonth(ctx) : null;
@@ -513,6 +820,8 @@
       pages.push(monthPage(ctx, mo));
       if (cfg.showHabits) { pages.push(habitsPage(ctx, mo)); }
       if (weeks) { weeks[index].forEach(function (start) { pages.push(weekPage(ctx, start)); }); }
+      if (cfg.showAttendance) { pages = pages.concat(attendancePages(ctx, mo)); }
+      ctx.meetings[index].forEach(function (meeting) { pages.push(meetingPage(ctx, meeting)); });
       if (cfg.showReview) { pages.push(reviewPage(ctx, mo)); }
       // As folhas de anotações ficam ENTRE os meses: não há folhas depois do último (como no modelo).
       if (cfg.ruledEnabled && index < ctx.months.length - 1) {
@@ -520,11 +829,17 @@
       }
     });
 
+    // Em frente e verso (e no livreto), a margem de encadernação alterna de lado nas páginas pares.
+    var mirrored = cfg.duplex || cfg.booklet;
+    var extra = (cfg.inkSaver ? ' eco' : '') + (cfg.highContrast ? ' hc' : '') + (cfg.largeText ? ' big' : '') +
+      (mirrored ? ' mirrored' : '');
     pages.forEach(function (page, index) {
       var num = page.querySelector('.page-number');
-      if (num) { num.textContent = String(index + 1).padStart(2, '0'); }
+      if (num) { num.textContent = pad2(index + 1); }
+      page.className += extra + (index % 2 ? ' even' : ' odd');
+      if (cfg.bindingMargin) { page.style.setProperty('--bind', cfg.bindingMargin + 'mm'); }
     });
-    return { pages: pages, yearLabel: ctx.yearLabel, customErrors: ctx.customErrors };
+    return { pages: pages, yearLabel: ctx.yearLabel, errors: ctx.errors };
   }
 
   global.PlannerPages = { build: build, MONTHS: MONTHS };

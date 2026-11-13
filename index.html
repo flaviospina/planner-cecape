@@ -182,6 +182,21 @@
           <input type="checkbox" name="showOptionalHolidays">
           <span>Pontos facultativos (Carnaval, Cinzas, Corpus Christi)</span>
         </label>
+        <label class="check sub" data-depends="showHolidays">
+          <input type="checkbox" name="showStateHoliday">
+          <span>Feriado estadual de SP (9 de julho)</span>
+        </label>
+        <label class="check sub" data-depends="showHolidays">
+          <input type="checkbox" name="showMunicipalHolidays">
+          <span>Feriados municipais</span>
+        </label>
+        <div class="sub" data-depends="showHolidays">
+          <label class="field" data-depends="showMunicipalHolidays">
+            <span>Lista de feriados municipais (uma data por linha)</span>
+            <textarea name="municipalHolidays" rows="2" maxlength="2000" spellcheck="false"></textarea>
+          </label>
+          <p class="msg" role="alert" data-errors="municipalHolidays" hidden></p>
+        </div>
         <label class="check">
           <input type="checkbox" name="showMoon">
           <span>Fases da lua (horário de Brasília)</span>
@@ -191,7 +206,7 @@
           <textarea name="customDates" rows="4" maxlength="6000" spellcheck="false"
             placeholder="15/10 Dia do Professor&#10;01/02/2027 Início das aulas"></textarea>
         </label>
-        <p id="dates-msg" class="msg" role="alert" hidden></p>
+        <p class="msg" role="alert" data-errors="customDates" hidden></p>
         <p class="hint">Use <strong>DD/MM Texto</strong> (repete todo ano) ou <strong>DD/MM/AAAA Texto</strong>.</p>
         <label class="check">
           <input type="checkbox" name="showPriorities">
@@ -201,6 +216,58 @@
           <span>Título do bloco</span>
           <input type="text" name="prioritiesTitle" maxlength="40">
         </label>
+      </details>
+
+      <details class="group">
+        <summary>Calendário letivo</summary>
+        <label class="field">
+          <span>Períodos letivos (um por linha)</span>
+          <textarea name="schoolPeriods" rows="4" maxlength="2000" spellcheck="false"
+            placeholder="01/02/2027 a 30/04/2027 1º bimestre&#10;03/05/2027 a 08/07/2027 2º bimestre"></textarea>
+        </label>
+        <p class="msg" role="alert" data-errors="schoolPeriods" hidden></p>
+        <label class="field">
+          <span>Recessos e férias (um por linha)</span>
+          <textarea name="schoolBreaks" rows="2" maxlength="2000" spellcheck="false"
+            placeholder="12/07/2027 a 23/07/2027 Recesso escolar"></textarea>
+        </label>
+        <p class="msg" role="alert" data-errors="schoolBreaks" hidden></p>
+        <p class="hint">Com os períodos informados, o planner marca início e fim de cada um, hachura os recessos
+          e conta os <strong>dias letivos</strong> (segunda a sexta, sem feriados nem recessos).</p>
+        <label class="field">
+          <span>Eventos recorrentes (um por linha)</span>
+          <textarea name="recurringEvents" rows="3" maxlength="2000" spellcheck="false"
+            placeholder="seg HTPC&#10;1ª qua Conselho de classe&#10;última sex Reunião de pais"></textarea>
+        </label>
+        <p class="msg" role="alert" data-errors="recurringEvents" hidden></p>
+        <p class="hint">Dia da semana e texto. Use <strong>1ª</strong> a <strong>4ª</strong> ou <strong>última</strong>
+          para uma vez por mês. Não caem em feriado nem em recesso.</p>
+        <label class="check">
+          <input type="checkbox" name="showSchoolSummary">
+          <span>Página de resumo (períodos, dias letivos, feriados)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showMeetings">
+          <span>Pauta e ata para cada reunião</span>
+        </label>
+        <label class="field" data-depends="showMeetings">
+          <span>Gerar para as datas cujo texto contém</span>
+          <input type="text" name="meetingKeyword" maxlength="30">
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showAttendance">
+          <span>Lista de chamada por turma, com as datas das aulas</span>
+        </label>
+        <div data-depends="showAttendance">
+          <label class="field">
+            <span>Turmas e alunos</span>
+            <textarea name="classes" rows="6" maxlength="30000" spellcheck="false"
+              placeholder="Turma: 5º A | seg, qua, sex&#10;Nome do aluno 1&#10;Nome do aluno 2&#10;Turma: 5º B | ter, qui"></textarea>
+          </label>
+          <p class="msg" role="alert" data-errors="classes" hidden></p>
+          <p class="hint">Uma linha <strong>Turma: nome | dias</strong> e, abaixo, um aluno por linha (sem nomes, a lista sai
+            em branco). Os nomes ficam somente neste navegador e no PDF gerado; nada é enviado para a internet.</p>
+        </div>
       </details>
 
       <details class="group">
@@ -222,6 +289,7 @@
           <select name="weeklyLayout">
             <option value="rows">Dias em linhas</option>
             <option value="columns">Dias em colunas, com horários (7h às 22h)</option>
+            <option value="lesson">Plano de aula (seg a sex, com habilidade BNCC)</option>
           </select>
         </label>
         <label class="check">
@@ -242,6 +310,7 @@
             <option value="lines">Pautada (linhas)</option>
             <option value="dots">Pontilhada</option>
             <option value="grid">Quadriculada</option>
+            <option value="cornell">Método Cornell (tópicos, anotações, resumo)</option>
             <option value="blank">Em branco</option>
           </select>
         </label>
@@ -259,7 +328,51 @@
         </label>
       </details>
 
+      <details class="group">
+        <summary>Impressão e acessibilidade</summary>
+        <label class="field">
+          <span>Margem extra de encadernação (0 a 15 mm)</span>
+          <input type="number" name="bindingMargin" min="0" max="15" step="1" inputmode="numeric">
+        </label>
+        <label class="check">
+          <input type="checkbox" name="duplex">
+          <span>Frente e verso (a margem de encadernação alterna de lado)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="booklet">
+          <span>Livreto A5 (duas páginas por folha A4, na ordem de dobra)</span>
+        </label>
+        <p class="hint" data-depends="booklet">Imprima em frente e verso, virando na <strong>borda curta</strong>;
+          depois dobre o maço ao meio e grampeie na dobra.</p>
+        <label class="check">
+          <input type="checkbox" name="inkSaver">
+          <span>Economia de tinta (sem fundos preenchidos)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="largeText">
+          <span>Fonte ampliada</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="highContrast">
+          <span>Alto contraste</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showLinks">
+          <span>Abas e links de navegação (PDF para tablet)</span>
+        </label>
+      </details>
+
       <div class="panel-foot">
+        <div class="model-buttons">
+          <button type="button" id="btn-export" class="btn btn-small">Exportar modelo</button>
+          <label class="btn btn-small">
+            Importar modelo
+            <input type="file" id="model-file" accept="application/json,.json" hidden>
+          </label>
+        </div>
+        <p id="model-msg" class="msg" role="alert" hidden></p>
+        <p class="hint">O modelo é um arquivo com todas as opções desta tela, para reaproveitar no ano seguinte
+          ou enviar a um colega. Ele inclui o logotipo e, se houver, os nomes dos alunos.</p>
         <button type="button" id="btn-reset" class="btn btn-ghost">Restaurar modelo original</button>
         <p id="save-msg" class="msg" role="status" hidden></p>
         <p class="hint">

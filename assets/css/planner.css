@@ -15,6 +15,9 @@
   --c4: #9a5b78;
   --accent: var(--c1);
   --mx: 18mm;
+  --bind: 0mm;                              /* margem extra de encadernação */
+  --ml: calc(var(--mx) + var(--bind));
+  --mr: var(--mx);
 
   position: relative;
   width: 210mm;
@@ -45,8 +48,8 @@
 /* ---------- Capa ---------- */
 .cover-logo {
   position: absolute;
-  left: var(--mx);
-  right: var(--mx);
+  left: var(--ml);
+  right: var(--mr);
   display: flex;
 }
 .cover-logo img { display: block; width: var(--logo-w, 75mm); height: auto; max-height: 34mm; object-fit: contain; }
@@ -58,8 +61,8 @@
 
 .cover-body {
   position: absolute;
-  left: var(--mx);
-  right: var(--mx);
+  left: var(--ml);
+  right: var(--mr);
   top: 73mm;
   display: flex;
   flex-direction: column;
@@ -124,7 +127,7 @@
 }
 
 /* ---------- Cabeçalho e rodapé das páginas internas ---------- */
-.head { position: absolute; left: var(--mx); right: var(--mx); top: 16.3mm; }
+.head { position: absolute; left: var(--ml); right: var(--mr); top: 16.3mm; }
 .head .bar { width: 30mm; height: 1.1mm; }
 .head .eyebrow {
   margin-top: 6.3mm;
@@ -147,8 +150,8 @@
 
 .inner-logo { position: absolute; top: 16.5mm; }
 .inner-logo img { display: block; width: var(--logo-w, 39mm); height: auto; max-height: 20mm; object-fit: contain; }
-.inner-logo.top-right { right: var(--mx); }
-.inner-logo.top-left { left: var(--mx); }
+.inner-logo.top-right { right: var(--mr); }
+.inner-logo.top-left { left: var(--ml); }
 .inner-logo.top-right img { object-position: right top; }
 .inner-logo.top-left img { object-position: left top; }
 .inner-logo.footer-center {
@@ -163,8 +166,8 @@
 
 .foot {
   position: absolute;
-  left: var(--mx);
-  right: var(--mx);
+  left: var(--ml);
+  right: var(--mr);
   top: 278.5mm;
   padding-top: 3.6mm;
   border-top: .75pt solid var(--line);
@@ -179,8 +182,8 @@
 /* ---------- Visão anual ---------- */
 .year-grid {
   position: absolute;
-  left: var(--mx);
-  right: var(--mx);
+  left: var(--ml);
+  right: var(--mr);
   top: 54.5mm;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -217,8 +220,8 @@
 /* ---------- Calendário mensal ---------- */
 .month-grid {
   position: absolute;
-  left: var(--mx);
-  right: var(--mx);
+  left: var(--ml);
+  right: var(--mr);
   top: 53mm;
   height: 160.5mm;
   display: grid;
@@ -298,7 +301,7 @@
 
 .legend {
   position: absolute;
-  right: var(--mx);
+  right: var(--mr);
   top: 224.5mm;
   display: flex;
   gap: 3.5mm;
@@ -308,7 +311,7 @@
 .legend span { display: flex; align-items: center; gap: 1mm; }
 .legend .moon { width: 2.2mm; height: 2.2mm; }
 
-.priorities { position: absolute; left: var(--mx); right: var(--mx); top: 223.5mm; }
+.priorities { position: absolute; left: var(--ml); right: var(--mr); top: 223.5mm; }
 .priorities h3 { margin: 0 0 5.2mm; font-size: 13pt; font-weight: 700; }
 
 /* Lista com caixas de seleção */
@@ -326,7 +329,7 @@
 .lines i { display: block; height: var(--rule-gap, 8mm); border-bottom: .75pt solid var(--line); }
 
 /* ---------- Área de conteúdo das páginas extras ---------- */
-.content { position: absolute; left: var(--mx); right: var(--mx); top: 55mm; bottom: 23.5mm; }
+.content { position: absolute; left: var(--ml); right: var(--mr); top: 55mm; bottom: 23.5mm; }
 .content h3.section { margin: 7mm 0 0; font-size: 12pt; font-weight: 700; }
 .content h3.section:first-child { margin-top: 0; }
 
@@ -389,17 +392,163 @@
 .week-cols .w-slot.we { background: var(--weekend); }
 
 /* ---------- Folha pautada ---------- */
-.ruled { position: absolute; left: var(--mx); right: var(--mx); top: 57.4mm; border-top: .75pt solid var(--line); }
+.ruled { position: absolute; left: var(--ml); right: var(--mr); top: 57.4mm; border-top: .75pt solid var(--line); }
 .ruled i { display: block; height: var(--rule-gap, 8mm); border-bottom: .75pt solid var(--line); }
 
 /* Pontilhado e quadriculado (desenho vetorial) */
-.pattern-holder { position: absolute; left: var(--mx); right: var(--mx); top: 57.4mm; display: flex; justify-content: center; }
+.pattern-holder { position: absolute; left: var(--ml); right: var(--mr); top: 57.4mm; display: flex; justify-content: center; }
 .pattern { display: block; overflow: visible; }
 .pattern .grid-line { fill: none; stroke: var(--line); stroke-width: .2; }
 .pattern .dot { fill: none; stroke: #8fa5b3; stroke-width: .5; stroke-linecap: round; }
 
+/* ---------- Calendário letivo ---------- */
+/* Recesso e férias: hachura leve */
+.month-grid .day.brk, .mini-grid span.brk {
+  background-image: repeating-linear-gradient(135deg, transparent 0 1.1mm, rgba(84, 107, 124, .16) 1.1mm 1.4mm);
+}
+.ev.period { color: var(--accent); }
+.ev.break { font-style: italic; }
+.ev.recurring { font-weight: 400; color: var(--navy); }
+.legend strong { color: var(--navy); font-size: 7.5pt; }
+
+/* Tabelas simples (resumo letivo, encaminhamentos) */
+.tbl { display: grid; margin-top: 3mm; }
+.tbl > div { margin: 0 -.75pt -.75pt 0; border: .75pt solid var(--line); padding: 0 2.5mm; min-height: 8mm; display: flex; align-items: center; font-size: 9pt; min-width: 0; }
+.tbl .th { background: var(--soft); font-size: 7.5pt; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+.tbl .td.total { font-weight: 700; }
+.t-periods { grid-template-columns: 1fr 30mm 30mm 26mm; }
+.t-breaks { grid-template-columns: 1fr 30mm 30mm; }
+.t-actions { grid-template-columns: 1fr 42mm 26mm; }
+.holiday-list { margin-top: 3mm; columns: 2; column-gap: 8mm; font-size: 8.5pt; }
+.h-item { display: flex; gap: 3mm; padding: 1.1mm 0; border-bottom: .5pt solid var(--line); break-inside: avoid; }
+.h-item b { flex: none; width: 19mm; color: var(--accent); }
+.empty-note { font-size: 10pt; color: var(--muted); }
+
+/* Pauta e ata */
+.meeting .m-info { display: grid; grid-template-columns: 1fr 1.4fr 1.6fr; gap: 6mm; }
+.m-field { display: flex; align-items: flex-end; gap: 2mm; height: 8mm; font-size: 7.5pt; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.m-field i { flex: 1; border-bottom: .75pt solid var(--line); }
+.meeting .checks .item { height: 9mm; }
+
+/* Lista de chamada */
+.attendance { display: grid; grid-auto-rows: 5.9mm; }
+.attendance > div { margin: 0 -.75pt -.75pt 0; border: .75pt solid var(--line); min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 7.5pt; }
+.attendance .th { grid-row: 1; height: 10mm; background: var(--soft); font-size: 6.5pt; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+.attendance { grid-template-rows: 10mm; }
+.attendance .th.date { flex-direction: column; gap: .3mm; }
+.attendance .th.date b { font-size: 8pt; color: var(--navy); }
+.attendance .th.date span { font-size: 5pt; }
+.attendance .name { justify-content: flex-start; padding: 0 2mm; white-space: nowrap; }
+.attendance .td.n { color: var(--muted); }
+
+/* Plano de aula semanal (BNCC) */
+.lesson {
+  display: grid;
+  grid-template-columns: 17mm 1fr 1fr 1.5fr 1.5fr 1fr;
+  grid-template-rows: 10mm;
+  grid-auto-rows: 1fr;
+  height: 100%;
+}
+.lesson > div { margin: 0 -.75pt -.75pt 0; border: .75pt solid var(--line); min-width: 0; min-height: 0; }
+.lesson .l-head { display: flex; align-items: center; padding: 0 1.8mm; background: var(--soft); font-size: 6.5pt; font-weight: 700; color: var(--accent); text-transform: uppercase; line-height: 1.15; }
+.lesson .w-label { padding: 2mm 1.8mm; }
+.lesson .w-label .num { font-size: 14pt; }
+
+/* Método Cornell */
+.cornell {
+  position: absolute;
+  left: var(--ml);
+  right: var(--mr);
+  top: 57.4mm;
+  height: 212mm;
+  display: grid;
+  grid-template-columns: 50mm 1fr;
+  grid-template-rows: 1fr 40mm;
+  border: .75pt solid var(--line);
+}
+.cornell > div { position: relative; overflow: hidden; }
+.c-cues { border-right: .75pt solid var(--accent); }
+.c-notes { padding: 6mm 0 0; }
+.c-notes .lines i { margin-left: 3mm; }
+.c-summary { grid-column: 1 / 3; border-top: .75pt solid var(--accent); }
+.c-tag { position: absolute; left: 2.5mm; top: 2mm; font-size: 6.5pt; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+
+/* ---------- Navegação por abas e links ---------- */
+.page a { color: inherit; text-decoration: none; }
+.tabs { position: absolute; top: 54mm; bottom: 24mm; right: 2.5mm; width: 8.5mm; display: flex; flex-direction: column; gap: .8mm; }
+.tabs .tab {
+  flex: 1;
+  max-height: 14mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: .6pt solid var(--accent);
+  border-radius: .8mm;
+  font-size: 5.5pt;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.tabs .tab.q1 { --accent: var(--c1); }
+.tabs .tab.q2 { --accent: var(--c2); }
+.tabs .tab.q3 { --accent: var(--c3); }
+.tabs .tab.q4 { --accent: var(--c4); }
+.tabs .tab.on { background: var(--accent); color: #fff; }
+.page.mirrored.even .tabs { right: auto; left: 2.5mm; }
+
+/* ---------- Impressão: encadernação, economia de tinta, acessibilidade ---------- */
+/* Frente e verso: nas páginas pares a margem de encadernação fica do lado direito */
+.page.mirrored.even { --ml: var(--mx); --mr: calc(var(--mx) + var(--bind)); }
+
+/* Economia de tinta: sem áreas preenchidas */
+.page.eco { --soft: transparent; --weekend: transparent; }
+.page.eco .cover-name { border: .75pt solid var(--line); }
+.page.eco .cover-blocks i { background: none; border: 1.2pt solid var(--c1); }
+.page.eco .cover-blocks i:nth-child(2) { border-color: var(--c2); }
+.page.eco .cover-blocks i:nth-child(3) { border-color: var(--c3); }
+.page.eco .cover-blocks i:nth-child(4) { border-color: var(--c4); }
+.page.eco .mini-name { border-bottom: .75pt solid var(--line); }
+.page.eco .tabs .tab.on { background: none; color: var(--accent); border-width: 1.4pt; }
+
+/* Alto contraste: linhas e textos mais escuros */
+.page.hc {
+  --navy: #000;
+  --muted: #22303c;
+  --line: #4a5a66;
+  --c1: #0f5564;
+  --c2: #1f5a47;
+  --c3: #8a4b17;
+  --c4: #6e3552;
+}
+.page.hc .pattern .dot { stroke: #33434f; }
+
+/* Fonte ampliada: aumenta os textos pequenos */
+.page.big .foot { font-size: 9pt; }
+.page.big .head .eyebrow { font-size: 11.5pt; }
+.page.big .mini-grid { font-size: 10.5pt; }
+.page.big .mini-grid b { font-size: 8.5pt; }
+.page.big .mini-name { font-size: 12pt; }
+.page.big .month-grid .wd { font-size: 10pt; }
+.page.big .month-grid .day { font-size: 13pt; }
+.page.big .month-grid > .wk { font-size: 8pt; }
+.page.big .ev { font-size: 7.5pt; }
+.page.big .legend { font-size: 8pt; }
+.page.big .priorities h3, .page.big .content h3.section { font-size: 14.5pt; }
+.page.big .w-label .w-dow, .page.big .goal-tag, .page.big .goal h4, .page.big .goal-due, .page.big .m-field { font-size: 9.5pt; }
+.page.big .week-cols .w-hour, .page.big .habits .h-head, .page.big .lesson .l-head, .page.big .c-tag { font-size: 8pt; }
+.page.big .tbl > div { font-size: 10.5pt; }
+.page.big .tbl .th, .page.big .attendance .th { font-size: 8.5pt; }
+.page.big .attendance > div, .page.big .holiday-list { font-size: 9.5pt; }
+.page.big .cover-name span, .page.big .cover-city { font-size: 11pt; }
+.page.big .tabs .tab { font-size: 6.5pt; }
+
+/* ---------- Livreto A5: duas páginas por folha A4 deitada ---------- */
+.sheet { display: flex; width: 297mm; height: 210mm; overflow: hidden; background: #fff; }
+.sheet .page { flex: none; zoom: .70714; }
+.page.blank { background: #fff; }
+
 /* ---------- Impressão ---------- */
-@page { size: A4 portrait; margin: 0; }
+/* O tamanho do papel (@page) é definido em app.js: A4 em pé ou, no livreto, deitado. */
 
 @media print {
   html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
@@ -407,4 +556,7 @@
   #preview { zoom: 1 !important; padding: 0 !important; margin: 0 !important; gap: 0 !important; display: block !important; }
   .page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
   .page:last-child { break-after: auto; page-break-after: auto; }
+  .sheet { box-shadow: none !important; break-after: page; page-break-after: always; }
+  .sheet:last-child { break-after: auto; page-break-after: auto; }
+  .sheet .page, .sheet .page:last-child { break-after: auto; page-break-after: auto; }
 }

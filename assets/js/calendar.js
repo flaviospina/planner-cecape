@@ -73,8 +73,9 @@
     [11, 25, 'Natal']
   ];
 
-  // Feriados nacionais do ano. Com includeOptional, soma os pontos facultativos móveis.
-  function holidays(y, includeOptional) {
+  // Feriados nacionais do ano. Com includeOptional, soma os pontos facultativos móveis;
+  // com includeState, o feriado estadual de São Paulo (9 de julho).
+  function holidays(y, includeOptional, includeState) {
     var list = FIXED_HOLIDAYS.map(function (h) {
       return { y: y, m: h[0], d: h[1], text: h[2], type: 'holiday' };
     });
@@ -84,6 +85,9 @@
       list.push({ y: y, m: dt.getMonth(), d: dt.getDate(), text: text, type: type });
     }
     rel(-2, 'Sexta-feira Santa', 'holiday');
+    if (includeState) {
+      list.push({ y: y, m: 6, d: 9, text: 'Revolução Constitucionalista (SP)', type: 'holiday' });
+    }
     if (includeOptional) {
       rel(-48, 'Carnaval', 'optional');
       rel(-47, 'Carnaval', 'optional');
@@ -126,13 +130,102 @@
     }
     years.forEach(function (y) {
       if (opts.holidays) {
-        holidays(y, opts.optional).forEach(function (h) { add(h.y, h.m, h.d, h.text, h.type); });
+        holidays(y, opts.optional, opts.state).forEach(function (h) { add(h.y, h.m, h.d, h.text, h.type); });
       }
-      (opts.custom || []).forEach(function (c) {
-        if (c.y === null || c.y === y) { add(y, c.m, c.d, c.text, 'custom'); }
+      // Listas de datas informadas pelo usuário: [{ items, type }]
+      (opts.lists || []).forEach(function (list) {
+        list.items.forEach(function (c) {
+          if (c.y === null || c.y === y) { add(y, c.m, c.d, c.text, list.type); }
+        });
       });
     });
     return map;
+  }
+
+  // ----- Calendário letivo: períodos, eventos recorrentes e turmas -----
+
+  var DOW_BY_NAME = { dom: 0, seg: 1, ter: 2, qua: 3, qui: 4, sex: 5, sab: 6, 'sáb': 6 };
+  var DOW_PATTERN = '(dom|seg|ter|qua|qui|sex|s[áa]b)[a-zçáã]*(?:-feira)?';
+
+  function forEachLine(text, handler) {
+    String(text || '').split(/\r?\n/).forEach(function (line, index) {
+      line = line.trim();
+      if (line) { handler(line, index + 1); }
+    });
+  }
+
+  function makeDate(d, m, y) {
+    d = parseInt(d, 10); m = parseInt(m, 10) - 1; y = parseInt(y, 10);
+    if (m < 0 || m > 11 || d < 1 || d > daysInMonth(y, m)) { return null; }
+    return new Date(y, m, d);
+  }
+
+  // Intervalos: "DD/MM/AAAA a DD/MM/AAAA Nome" (bimestres, recessos, férias).
+  function parseRanges(text, fallbackName) {
+    var items = [];
+    var errors = [];
+    var re = /^(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(?:a|à|até|ate|-|–|—)\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[-–—:]?\s*(.*)$/i;
+    forEachLine(text, function (line, number) {
+      var m = re.exec(line);
+      var from = m && makeDate(m[1], m[2], m[3]);
+      var to = m && makeDate(m[4], m[5], m[6]);
+      if (!from || !to || from > to) { errors.push(number); return; }
+      items.push({ from: from, to: to, text: (m[7].trim() || fallbackName).slice(0, 40) });
+    });
+    return { items: items, errors: errors };
+  }
+
+  // Eventos recorrentes: "seg HTPC" (toda segunda), "1ª qua Conselho", "última sex Reunião de pais".
+  function parseRecurring(text) {
+    var items = [];
+    var errors = [];
+    var re = new RegExp('^(?:([1-4])\\s*[ªaº°]?\\s+|([úu]ltim[ao])\\s+)?' + DOW_PATTERN + '\\s*[-–—:]?\\s+(\\S.*)$', 'i');
+    forEachLine(text, function (line, number) {
+      var m = re.exec(line);
+      if (!m) { errors.push(number); return; }
+      items.push({
+        ord: m[1] ? parseInt(m[1], 10) : (m[2] ? 'last' : null),
+        dow: DOW_BY_NAME[m[3].toLowerCase()],
+        text: m[4].trim().slice(0, 60)
+      });
+    });
+    return { items: items, errors: errors };
+  }
+
+  function recurringMatches(item, date) {
+    if (date.getDay() !== item.dow) { return false; }
+    if (item.ord === null) { return true; }
+    var d = date.getDate();
+    if (item.ord === 'last') { return d + 7 > daysInMonth(date.getFullYear(), date.getMonth()); }
+    return Math.ceil(d / 7) === item.ord;
+  }
+
+  // Turmas: uma linha "Turma: 5º A | seg, qua, sex" seguida dos nomes dos alunos, um por linha.
+  function parseClasses(text) {
+    var items = [];
+    var errors = [];
+    var current = null;
+    var dowRe = new RegExp(DOW_PATTERN, 'ig');
+    forEachLine(text, function (line, number) {
+      var m = /^turma\s*:\s*([^|]+)\|(.*)$/i.exec(line);
+      if (m) {
+        var dows = [];
+        var found;
+        dowRe.lastIndex = 0;
+        while ((found = dowRe.exec(m[2])) !== null) {
+          var dow = DOW_BY_NAME[found[1].toLowerCase()];
+          if (dows.indexOf(dow) < 0) { dows.push(dow); }
+        }
+        if (!dows.length || !m[1].trim()) { errors.push(number); current = null; return; }
+        current = { name: m[1].trim().slice(0, 40), dows: dows, students: [] };
+        items.push(current);
+      } else if (current && !/^turma\s*:/i.test(line)) {
+        current.students.push(line.slice(0, 60));
+      } else {
+        errors.push(number);
+      }
+    });
+    return { items: items, errors: errors };
   }
 
   // ----- Fases da lua (Jean Meeus, "Astronomical Algorithms", cap. 49) -----
@@ -203,6 +296,10 @@
     easter: easter,
     holidays: holidays,
     parseCustomDates: parseCustomDates,
+    parseRanges: parseRanges,
+    parseRecurring: parseRecurring,
+    recurringMatches: recurringMatches,
+    parseClasses: parseClasses,
     buildEvents: buildEvents,
     phaseTime: phaseTime,
     moonPhases: moonPhases

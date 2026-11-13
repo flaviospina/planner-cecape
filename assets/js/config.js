@@ -36,24 +36,46 @@
     showWeekNumbers: false,      // número da semana (ISO) ao lado de cada linha
     showHolidays: false,         // feriados nacionais
     showOptionalHolidays: false, // pontos facultativos (Carnaval, Cinzas, Corpus Christi)
+    showStateHoliday: false,     // feriado estadual de SP (9 de julho)
+    showMunicipalHolidays: false,
+    municipalHolidays: '28/07 Aniversário de São Caetano do Sul', // editável; mesmo formato das datas próprias
     showMoon: false,             // fases da lua
     customDates: '',             // datas próprias, uma por linha: "DD/MM Texto" ou "DD/MM/AAAA Texto"
     showPriorities: true,
     prioritiesTitle: 'Prioridades do mês',
 
+    // Calendário letivo
+    schoolPeriods: '',           // "DD/MM/AAAA a DD/MM/AAAA 1º bimestre", um por linha
+    schoolBreaks: '',            // "DD/MM/AAAA a DD/MM/AAAA Recesso", um por linha
+    recurringEvents: '',         // "seg HTPC", "1ª qua Conselho", "última sex Reunião de pais"
+    showSchoolSummary: false,    // página de resumo do calendário letivo
+    showMeetings: false,         // página de pauta/ata para cada reunião encontrada
+    meetingKeyword: 'HTPC',      // texto que identifica as reuniões entre as datas e os eventos recorrentes
+    showAttendance: false,       // lista de chamada por turma e por mês
+    classes: '',                 // "Turma: 5º A | seg, qua" + nomes dos alunos, um por linha
+
     // Páginas extras
     showGoals: false,            // metas do período (após a visão anual)
     showHabits: false,           // tracker de hábitos (uma página por mês)
     showWeekly: false,           // páginas semanais
-    weeklyLayout: 'rows',        // rows (dias em linhas) | columns (dias em colunas, com horários)
+    weeklyLayout: 'rows',        // rows (dias em linhas) | columns (colunas com horários) | lesson (plano de aula com BNCC)
     showReview: false,           // revisão do mês
 
     // Folhas de anotações entre os meses
     ruledEnabled: true,
     ruledCount: 1,               // quantidade de folhas entre um mês e o seguinte
-    ruledStyle: 'lines',         // lines | dots | grid | blank
+    ruledStyle: 'lines',         // lines | dots | grid | cornell | blank
     ruledTitle: 'Anotações',
-    ruledGap: 8                  // espaçamento da pauta em mm
+    ruledGap: 8,                 // espaçamento da pauta em mm
+
+    // Impressão e acessibilidade
+    bindingMargin: 0,            // margem extra de encadernação, em mm
+    duplex: false,               // frente e verso: a margem de encadernação alterna de lado
+    booklet: false,              // livreto A5: duas páginas por folha A4, na ordem de dobra
+    inkSaver: false,             // economia de tinta: sem fundos preenchidos
+    largeText: false,            // fonte ampliada
+    highContrast: false,         // alto contraste
+    showLinks: false             // abas e links de navegação entre as páginas (uso em tablet)
   };
 
   var limits = {
@@ -61,7 +83,8 @@
     startMonth: [1, 12],
     monthCount: [1, 18],
     ruledCount: [1, 20],
-    ruledGap: [5, 12]
+    ruledGap: [5, 12],
+    bindingMargin: [0, 15]
   };
 
   var enums = {
@@ -71,12 +94,15 @@
     logoCoverSize: ['s', 'm', 'l'],
     logoInner: ['top-right', 'top-left', 'footer-center', 'none'],
     logoInnerSize: ['s', 'm', 'l'],
-    weeklyLayout: ['rows', 'columns'],
-    ruledStyle: ['lines', 'dots', 'grid', 'blank']
+    weeklyLayout: ['rows', 'columns', 'lesson'],
+    ruledStyle: ['lines', 'dots', 'grid', 'cornell', 'blank']
   };
 
   // Tamanho máximo dos textos (o padrão é 80 caracteres).
-  var maxLength = { logoSrc: 4000000, customDates: 6000 };
+  var maxLength = {
+    logoSrc: 4000000, customDates: 6000, municipalHolidays: 2000,
+    schoolPeriods: 2000, schoolBreaks: 2000, recurringEvents: 2000, classes: 30000
+  };
 
   function clampInt(value, range, fallback) {
     var n = parseInt(value, 10);
