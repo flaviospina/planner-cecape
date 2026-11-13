@@ -4,6 +4,8 @@
 (function (global) {
   'use strict';
 
+  (global.PlannerBuild = global.PlannerBuild || {}).pages = 4;
+
   var Cal = global.PlannerCalendar;
 
   var MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',

@@ -3,6 +3,9 @@
 (function (global) {
   'use strict';
 
+  (global.PlannerBuild = global.PlannerBuild || {}).app = 4;
+
+  var UI = global.PlannerUI;
   var Config = global.PlannerConfig;
   var Pages = global.PlannerPages;
 
@@ -16,10 +19,8 @@
   var pageCount = document.getElementById('page-count');
   var logoThumb = document.getElementById('logo-thumb');
   var logoFile = document.getElementById('logo-file');
-  var logoMsg = document.getElementById('logo-msg');
   var saveMsg = document.getElementById('save-msg');
   var modelFile = document.getElementById('model-file');
-  var modelMsg = document.getElementById('model-msg');
 
   // Regra @page: A4 em pé ou, no livreto, deitado.
   var pageRule = document.createElement('style');
@@ -27,8 +28,10 @@
 
   var cfg = Config.load();
   var renderTimer = null;
+  var lastResult = { pages: 0, sheets: 0 };
 
   function showMsg(node, text, ok) {
+    if (!node) { return; }
     node.textContent = text || '';
     node.hidden = !text;
     node.classList.toggle('ok', !!ok);
@@ -131,10 +134,12 @@
 
   function render() {
     var result = Pages.build(cfg);
+    lastResult = { pages: result.pages.length, sheets: 0 };
     var nodes = cfg.booklet ? imposeBooklet(result.pages) : result.pages;
     var frag = document.createDocumentFragment();
     nodes.forEach(function (node) { frag.appendChild(node); });
     preview.replaceChildren(frag);
+    if (cfg.booklet) { lastResult.sheets = nodes.length / 2; }
     pageRule.textContent = '@page { size: A4 ' + (cfg.booklet ? 'landscape' : 'portrait') + '; margin: 0; }';
     fitPreview();
 
@@ -179,29 +184,29 @@
     logoFile.value = '';
     if (!file) { return; }
     if (LOGO_TYPES.indexOf(file.type) < 0) {
-      showMsg(logoMsg, 'Formato não aceito. Envie uma imagem PNG, JPG, WebP ou SVG.');
+      UI.notify('error', 'Formato não aceito', 'Envie uma imagem PNG, JPG, WebP ou SVG.');
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      showMsg(logoMsg, 'A imagem tem mais de 2 MB. Reduza o arquivo e tente novamente.');
+      UI.notify('error', 'Imagem grande demais', 'A imagem tem mais de 2 MB. Reduza o arquivo e tente novamente.');
       return;
     }
     var reader = new FileReader();
     reader.onerror = function () {
-      showMsg(logoMsg, 'Não foi possível ler o arquivo. Tente novamente.');
+      UI.notify('error', 'Não foi possível ler o arquivo', 'Tente novamente.');
     };
     reader.onload = function () {
       var probe = new Image();
       probe.onerror = function () {
-        showMsg(logoMsg, 'O arquivo não é uma imagem válida.');
+        UI.notify('error', 'Arquivo inválido', 'O arquivo escolhido não é uma imagem válida.');
       };
       probe.onload = function () {
         cfg.logoSrc = reader.result;
         cfg = Config.sanitize(cfg);
         logoThumb.src = cfg.logoSrc;
-        showMsg(logoMsg, '');
         persist();
         render();
+        UI.toast('success', 'Logotipo trocado.');
       };
       probe.src = reader.result;
     };
@@ -211,25 +216,42 @@
   function onLogoReset() {
     cfg.logoSrc = Config.DEFAULT_LOGO;
     logoThumb.src = cfg.logoSrc;
-    showMsg(logoMsg, '');
     persist();
     render();
+    UI.toast('success', 'Logotipo padrão restaurado.');
   }
 
   // ----- Exportar e importar modelo -----
 
+  function hasStudentNames() {
+    return cfg.classes.split(/\r?\n/).some(function (line) {
+      return line.trim() !== '' && !/^\s*turma\s*:/i.test(line);
+    });
+  }
+
   function onExport() {
     readForm();
-    var data = JSON.stringify({ app: 'planner-cecape', version: 1, config: cfg }, null, 2);
-    var url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = 'modelo-planner-' + cfg.year + '.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    showMsg(modelMsg, 'Modelo exportado. Procure o arquivo na pasta de downloads.', true);
+    UI.confirm({
+      title: 'Exportar modelo',
+      text: 'Será baixado um arquivo com todas as opções desta tela (inclusive o logotipo). ' +
+        'Guarde-o para reaproveitar no ano seguinte ou envie a um colega, que poderá abri-lo em "Importar modelo".',
+      note: hasStudentNames() ? 'Atenção: o arquivo leva junto os nomes dos alunos digitados nas turmas.' : null,
+      icon: 'info',
+      confirmText: 'Baixar arquivo'
+    }).then(function (ok) {
+      if (!ok) { return; }
+      var name = 'modelo-planner-' + cfg.year + '.json';
+      var data = JSON.stringify({ app: 'planner-cecape', version: 1, config: cfg }, null, 2);
+      var url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      UI.notify('success', 'Modelo exportado', 'O arquivo "' + name + '" está na pasta de downloads.');
+    });
   }
 
   function onImport() {
@@ -237,12 +259,12 @@
     modelFile.value = '';
     if (!file) { return; }
     if (file.size > MAX_MODEL_BYTES) {
-      showMsg(modelMsg, 'O arquivo é grande demais para ser um modelo deste gerador.');
+      UI.notify('error', 'Arquivo grande demais', 'Este arquivo é grande demais para ser um modelo deste gerador.');
       return;
     }
     var reader = new FileReader();
     reader.onerror = function () {
-      showMsg(modelMsg, 'Não foi possível ler o arquivo. Tente novamente.');
+      UI.notify('error', 'Não foi possível ler o arquivo', 'Tente novamente.');
     };
     reader.onload = function () {
       var data;
@@ -252,38 +274,81 @@
         data = null;
       }
       if (!data || data.app !== 'planner-cecape' || !data.config || typeof data.config !== 'object') {
-        showMsg(modelMsg, 'Este arquivo não é um modelo exportado por este gerador.');
+        UI.notify('error', 'Arquivo não reconhecido', 'Este arquivo não é um modelo exportado por este gerador.');
         return;
       }
-      // sanitize() descarta qualquer valor fora do esperado.
-      cfg = Config.sanitize(data.config);
-      fillForm();
-      persist();
-      render();
-      showMsg(modelMsg, 'Modelo importado.', true);
+      UI.confirm({
+        title: 'Importar modelo?',
+        text: 'As opções atuais desta tela serão substituídas pelas do arquivo "' + file.name + '".',
+        confirmText: 'Importar'
+      }).then(function (ok) {
+        if (!ok) { return; }
+        applyConfig(data.config);
+        UI.toast('success', 'Modelo importado.');
+      });
     };
     reader.readAsText(file);
+  }
+
+  // Substitui todas as opções (modelo importado ou vindo do servidor). sanitize() descarta valores inválidos.
+  function applyConfig(raw) {
+    cfg = Config.sanitize(raw);
+    fillForm();
+    persist();
+    render();
   }
 
   // ----- Ações -----
 
   function onReset() {
-    if (!global.confirm('Restaurar todas as opções para o modelo original? As listas digitadas (datas, turmas) serão apagadas.')) {
-      return;
-    }
-    cfg = Config.reset();
-    fillForm();
-    showMsg(logoMsg, '');
-    showMsg(saveMsg, '');
-    showMsg(modelMsg, '');
-    render();
+    UI.confirm({
+      title: 'Restaurar o modelo original?',
+      text: 'Todas as opções voltam ao padrão do planner CECAPE.',
+      note: 'As listas digitadas (datas, períodos, turmas e alunos) e o logotipo enviado serão apagados deste navegador.',
+      confirmText: 'Restaurar',
+      danger: true
+    }).then(function (ok) {
+      if (!ok) { return; }
+      cfg = Config.reset();
+      fillForm();
+      showMsg(saveMsg, '');
+      render();
+      UI.toast('success', 'Modelo original restaurado.');
+    });
   }
 
   function onPrint() {
     clearTimeout(renderTimer);
-    readForm();
-    render();
-    global.print();
+    try {
+      readForm();
+      render();
+    } catch (error) {
+      // Mesmo que a atualização falhe, a impressão do que está na tela continua disponível.
+      if (global.console) { global.console.error(error); }
+    }
+    var items = [
+      'Destino: Salvar como PDF (ou a impressora)',
+      'Papel: A4',
+      'Margens: Nenhuma',
+      'Gráficos de plano de fundo: ativado'
+    ];
+    if (cfg.booklet) {
+      items.push('Frente e verso: virar na borda curta');
+    } else if (cfg.duplex) {
+      items.push('Frente e verso: virar na borda longa');
+    }
+    UI.confirm({
+      title: 'Imprimir ou salvar em PDF',
+      text: 'Seu planner tem ' + lastResult.pages + ' páginas' +
+        (lastResult.sheets ? ', em ' + lastResult.sheets + ' folhas A4 (livreto A5)' : '') +
+        '. Na janela que vai abrir, confira:',
+      items: items,
+      icon: 'info',
+      confirmText: 'Abrir impressão'
+    }).then(function (ok) {
+      // Aguarda a caixa fechar por completo antes de abrir a janela de impressão.
+      if (ok) { setTimeout(function () { global.print(); }, 350); }
+    });
   }
 
   form.addEventListener('input', onChange);
@@ -297,6 +362,12 @@
   document.getElementById('btn-reset').addEventListener('click', onReset);
   document.getElementById('btn-print').addEventListener('click', onPrint);
   global.addEventListener('resize', fitPreview);
+
+  // Usado pelo módulo de modelos no servidor (server.js).
+  global.PlannerApp = {
+    getConfig: function () { readForm(); return cfg; },
+    applyConfig: applyConfig
+  };
 
   fillForm();
   render();

@@ -17,6 +17,9 @@
 
 html, body { margin: 0; padding: 0; }
 
+/* O atributo hidden vale mesmo para elementos com display definido (botões, links) */
+[hidden] { display: none !important; }
+
 body {
   background: var(--ui-bg);
   color: var(--ui-navy);
@@ -110,7 +113,7 @@ body {
 #preview .sheet .page { box-shadow: none; }
 .group > summary:focus-visible { outline: 3px solid #8fc3cf; outline-offset: 2px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid #8fc3cf; outline-offset: 0; border-color: var(--ui-teal); }
-.field input:invalid { border-color: var(--ui-danger); }
+.field input:user-invalid { border-color: var(--ui-danger); }
 
 .check { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; cursor: pointer; }
 .check input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--ui-teal); flex: none; }
@@ -156,6 +159,35 @@ body {
 
 .panel-foot { padding-top: 14px; }
 
+/* ---------- Modelos no servidor ---------- */
+.server { padding: 14px 16px; background: var(--ui-soft); border-bottom: 1px solid var(--ui-line); }
+.server h2 { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-teal); }
+.server .hint { margin: 0 0 8px; }
+.server .field { margin: 8px 0; }
+.server-account { margin-top: 8px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+a.btn { text-decoration: none; }
+
+/* ---------- Aviso de arquivos desatualizados ---------- */
+.outdated { padding: 12px 16px; background: #fbefed; border-bottom: 2px solid var(--ui-danger); color: #7a251d; }
+.outdated kbd, .outdated code { padding: 1px 5px; border: 1px solid #d9a9a3; border-radius: 4px; background: #fff; font: inherit; font-size: 13px; }
+
+/* ---------- Caixas de diálogo (SweetAlert2) ---------- */
+.swal2-popup { font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+.swal2-title { color: var(--ui-navy); font-size: 22px; }
+.dlg-body { text-align: left; font-size: 15px; line-height: 1.5; color: var(--ui-navy); }
+.dlg-body p { margin: 0 0 10px; }
+.dlg-list { margin: 0 0 10px; padding-left: 22px; }
+.dlg-list li { margin: 3px 0; }
+.dlg-note { padding: 8px 10px; border-left: 3px solid #cb8147; background: #fbf4ec; font-size: 14px; }
+.dlg-field { display: block; margin: 0 0 12px; }
+.dlg-field span { display: block; margin-bottom: 4px; font-size: 13px; color: var(--ui-muted); }
+.dlg-field input { width: 100%; min-height: 40px; padding: 6px 10px; border: 1px solid var(--ui-line); border-radius: 6px; font: inherit; }
+.dlg-field input:focus { outline: 3px solid #8fc3cf; border-color: var(--ui-teal); }
+.dlg-field small, .dlg-check small { display: block; margin-top: 3px; font-size: 12px; color: var(--ui-muted); }
+.dlg-check { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 12px; cursor: pointer; }
+.dlg-check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ui-teal); }
+
 /* ---------- Pré-visualização ---------- */
 .stage { padding: 16px 0 40px; overflow-x: hidden; }
 #preview { display: flex; flex-direction: column; align-items: center; gap: 22px; }
@@ -177,6 +209,7 @@ body {
 }
 
 @media print {
+  .swal2-container { display: none !important; }
   .layout { display: block; }
   .stage { padding: 0; overflow: visible; }
 }

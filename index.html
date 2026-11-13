@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gerador de Planner — CECAPE</title>
-  <link rel="stylesheet" href="assets/css/planner.css">
-  <link rel="stylesheet" href="assets/css/app.css">
+  <link rel="stylesheet" href="assets/css/planner.css?v=4">
+  <link rel="stylesheet" href="assets/css/app.css?v=4">
 </head>
 <body>
 
@@ -20,9 +20,44 @@
   </div>
 </header>
 
+<!-- Aviso mostrado quando os arquivos do gerador não carregaram ou estão em versões diferentes -->
+<div id="outdated" class="outdated no-print" role="alert" hidden>
+  <strong>O gerador não carregou por completo.</strong>
+  Pressione <kbd>Ctrl</kbd> + <kbd>F5</kbd> para recarregar. Se o aviso continuar, envie novamente ao servidor
+  o arquivo <code>index.html</code> e a pasta <code>assets</code> inteira, da mesma versão.
+</div>
+
 <div class="layout">
 
   <aside class="panel no-print" aria-label="Opções do planner">
+
+    <!-- Modelos guardados no servidor: só aparece quando o gerador está instalado com PHP e MySQL -->
+    <section id="server" class="server" hidden>
+      <h2>Modelos no servidor</h2>
+      <div id="server-out">
+        <p id="server-status" class="hint">Entre para guardar seus modelos e usar os compartilhados pelos colegas.</p>
+        <button type="button" id="server-login" class="btn btn-small btn-primary">Entrar</button>
+      </div>
+      <div id="server-in" hidden>
+        <p class="hint">Conectado(a) como <strong id="server-user"></strong></p>
+        <label class="field">
+          <span>Modelo</span>
+          <select id="server-list"></select>
+        </label>
+        <div class="model-buttons">
+          <button type="button" id="server-load" class="btn btn-small btn-primary">Carregar</button>
+          <button type="button" id="server-save-new" class="btn btn-small">Salvar como novo</button>
+          <button type="button" id="server-update" class="btn btn-small">Atualizar</button>
+          <button type="button" id="server-delete" class="btn btn-small btn-ghost">Excluir</button>
+        </div>
+        <div class="model-buttons server-account">
+          <a id="server-admin" class="btn btn-small btn-ghost" href="usuarios.php" hidden>Usuários</a>
+          <button type="button" id="server-password" class="btn btn-small btn-ghost">Trocar senha</button>
+          <button type="button" id="server-logout" class="btn btn-small btn-ghost">Sair</button>
+        </div>
+      </div>
+    </section>
+
     <form id="options" autocomplete="off" novalidate>
 
       <details class="group" open>
@@ -113,7 +148,6 @@
               <button type="button" id="logo-reset" class="btn btn-small btn-ghost">Usar padrão</button>
             </div>
           </div>
-          <p id="logo-msg" class="msg" role="alert" hidden></p>
           <p class="hint">A imagem fica somente neste navegador; nada é enviado para a internet.</p>
         </div>
 
@@ -370,7 +404,6 @@
             <input type="file" id="model-file" accept="application/json,.json" hidden>
           </label>
         </div>
-        <p id="model-msg" class="msg" role="alert" hidden></p>
         <p class="hint">O modelo é um arquivo com todas as opções desta tela, para reaproveitar no ano seguinte
           ou enviar a um colega. Ele inclui o logotipo e, se houver, os nomes dos alunos.</p>
         <button type="button" id="btn-reset" class="btn btn-ghost">Restaurar modelo original</button>
@@ -391,9 +424,26 @@
 
 <noscript><p class="noscript">Este gerador precisa de JavaScript ativado no navegador.</p></noscript>
 
-<script src="assets/js/config.js"></script>
-<script src="assets/js/calendar.js"></script>
-<script src="assets/js/pages.js"></script>
-<script src="assets/js/app.js"></script>
+<script src="assets/vendor/sweetalert2.all.min.js?v=4"></script>
+<script src="assets/js/dialogs.js?v=4"></script>
+<script src="assets/js/config.js?v=4"></script>
+<script src="assets/js/calendar.js?v=4"></script>
+<script src="assets/js/pages.js?v=4"></script>
+<script src="assets/js/app.js?v=4"></script>
+<script src="assets/js/server.js?v=4"></script>
+<script>
+  // Confere se todos os scripts carregaram e são da mesma versão deste index.html.
+  // Ao publicar uma versão nova, o número abaixo, os "?v=" acima e o PlannerBuild de cada script mudam juntos.
+  (function () {
+    var BUILD = 4;
+    var built = window.PlannerBuild || {};
+    var ok = ['dialogs', 'config', 'calendar', 'pages', 'app', 'server'].every(function (name) {
+      return built[name] === BUILD;
+    });
+    if (!ok || !window.PlannerApp) {
+      document.getElementById('outdated').hidden = false;
+    }
+  })();
+</script>
 </body>
 </html>
