@@ -131,9 +131,9 @@ Confira no cPanel > **Selecionar versão do PHP** se a pasta usa PHP 8.2 ou supe
 ### Imagem de compartilhamento (WhatsApp, Facebook, LinkedIn)
 
 O `index.html` já tem as metatags de compartilhamento, a imagem (`assets/img/compartilhar.jpg`,
-1200 × 630) e os ícones do site. Essas redes só mostram a imagem quando o endereço é completo,
-por isso, **depois de publicar**, abra o `index.html` no editor do cPanel e troque
-`https://SEU-DOMINIO/planner` pelo endereço real nas três linhas marcadas com `<!-- trocar -->`.
+1200 × 630) e os ícones do site, apontando para `https://sist.cecapescs.com.br/planner`.
+Essas redes só mostram a imagem quando o endereço é completo; se o gerador mudar de endereço,
+troque-o nas linhas `og:url`, `og:image` e `twitter:image` do `index.html`.
 Para conferir, use o depurador do Facebook (developers.facebook.com/tools/debug); o WhatsApp
 guarda a prévia antiga por algum tempo.
 
