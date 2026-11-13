@@ -1,0 +1,276 @@
+/* assets/css/planner.css
+ * Estilo das páginas do planner (A4 retrato). Usado na pré-visualização e na impressão.
+ * Medidas em mm/pt para que o PDF saia idêntico ao que aparece na tela.
+ */
+
+.page {
+  --navy: #152b45;
+  --muted: #546b7c;
+  --line: #bacad3;
+  --soft: #eff5f8;
+  --weekend: #f5f8fa;
+  --c1: #1a7185;
+  --c2: #38856d;
+  --c3: #cb8147;
+  --c4: #9a5b78;
+  --accent: var(--c1);
+  --mx: 18mm;
+
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  background: #fff;
+  color: var(--navy);
+  font-family: Helvetica, Arial, "Liberation Sans", sans-serif;
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.page *, .page *::before, .page *::after { box-sizing: border-box; }
+
+.page.q1 { --accent: var(--c1); }
+.page.q2 { --accent: var(--c2); }
+.page.q3 { --accent: var(--c3); }
+.page.q4 { --accent: var(--c4); }
+
+/* Faixa de quatro cores (identidade do modelo) */
+.bar { display: flex; }
+.bar i { display: block; height: 100%; flex: 1; }
+.bar i:nth-child(1) { background: var(--c1); }
+.bar i:nth-child(2) { background: var(--c2); }
+.bar i:nth-child(3) { background: var(--c3); }
+.bar i:nth-child(4) { background: var(--c4); }
+
+/* ---------- Capa ---------- */
+.cover-logo {
+  position: absolute;
+  left: var(--mx);
+  right: var(--mx);
+  display: flex;
+}
+.cover-logo img { display: block; width: var(--logo-w, 75mm); height: auto; max-height: 34mm; object-fit: contain; }
+.cover-logo.v-top { top: 25mm; }
+.cover-logo.v-bottom { bottom: 16mm; align-items: flex-end; }
+.cover-logo.h-left { justify-content: flex-start; }
+.cover-logo.h-center { justify-content: center; }
+.cover-logo.h-right { justify-content: flex-end; }
+
+.cover-body {
+  position: absolute;
+  left: var(--mx);
+  right: var(--mx);
+  top: 73mm;
+  display: flex;
+  flex-direction: column;
+}
+/* Sem logo no topo, o conteúdo sobe para ocupar o espaço */
+.cover.logo-bottom .cover-body, .cover.logo-none .cover-body { top: 40mm; }
+.cover.align-center .cover-body { align-items: center; text-align: center; }
+.cover.align-right .cover-body { align-items: flex-end; text-align: right; }
+
+.cover .bar { width: 44mm; height: 1.1mm; }
+.cover-title {
+  margin: 10mm 0 0;
+  font-size: 40pt;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: .3pt;
+  overflow-wrap: anywhere;
+}
+.cover-year {
+  margin: 3mm 0 0 -1.5mm;
+  font-size: 128pt;
+  line-height: 1;
+  font-weight: 700;
+}
+.cover.align-center .cover-year, .cover.align-right .cover-year { margin-left: 0; }
+.cover-subtitle {
+  margin: 9mm 0 0;
+  font-size: 16pt;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.cover-name {
+  align-self: stretch;
+  margin-top: 18mm;
+  padding: 6.5mm 6.5mm 8.5mm;
+  background: var(--soft);
+  text-align: left;
+}
+.cover-name span {
+  display: block;
+  font-size: 9pt;
+  font-weight: 700;
+  color: var(--c1);
+  text-transform: uppercase;
+}
+.cover-name i { display: block; margin-top: 11mm; border-bottom: .75pt solid var(--c1); opacity: .7; }
+.cover-blocks { align-self: stretch; display: flex; gap: 2mm; margin-top: 24mm; }
+.cover.no-name .cover-blocks { margin-top: 30mm; }
+.cover-blocks i { flex: 1; height: 19mm; }
+.cover-blocks i:nth-child(1) { background: var(--c1); }
+.cover-blocks i:nth-child(2) { background: var(--c2); }
+.cover-blocks i:nth-child(3) { background: var(--c3); }
+.cover-blocks i:nth-child(4) { background: var(--c4); }
+.cover-city {
+  margin-top: 12mm;
+  font-size: 8.5pt;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ---------- Cabeçalho e rodapé das páginas internas ---------- */
+.head { position: absolute; left: var(--mx); right: var(--mx); top: 16.3mm; }
+.head .bar { width: 30mm; height: 1.1mm; }
+.head .eyebrow {
+  margin-top: 6.3mm;
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.head .title {
+  margin: 1.6mm 0 0;
+  font-size: 36pt;
+  line-height: 1.15;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.head.mirror { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+
+.inner-logo { position: absolute; top: 16.5mm; }
+.inner-logo img { display: block; width: var(--logo-w, 39mm); height: auto; max-height: 20mm; object-fit: contain; }
+.inner-logo.top-right { right: var(--mx); }
+.inner-logo.top-left { left: var(--mx); }
+.inner-logo.top-right img { object-position: right top; }
+.inner-logo.top-left img { object-position: left top; }
+.inner-logo.footer-center {
+  top: auto;
+  bottom: 7.5mm;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+.inner-logo.footer-center img { width: auto; height: 9mm; max-height: 9mm; }
+
+.foot {
+  position: absolute;
+  left: var(--mx);
+  right: var(--mx);
+  top: 278.5mm;
+  padding-top: 3.6mm;
+  border-top: .75pt solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+/* ---------- Visão anual ---------- */
+.year-grid {
+  position: absolute;
+  left: var(--mx);
+  right: var(--mx);
+  top: 54.5mm;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 6mm;
+  row-gap: 0;
+  grid-auto-rows: 54.3mm;
+}
+.mini-name {
+  height: 9mm;
+  padding: 0 3mm;
+  display: flex;
+  align-items: center;
+  background: var(--soft);
+  font-size: 10.5pt;
+  font-weight: 700;
+  color: var(--accent);
+}
+.mini.q1 { --accent: var(--c1); }
+.mini.q2 { --accent: var(--c2); }
+.mini.q3 { --accent: var(--c3); }
+.mini.q4 { --accent: var(--c4); }
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin: 3.2mm .5mm 0;
+  text-align: center;
+  font-size: 9pt;
+  line-height: 4.3mm;
+}
+.mini-grid b { font-size: 7pt; color: var(--muted); padding-bottom: 2.2mm; }
+.mini-grid span.we { color: var(--muted); }
+
+/* ---------- Calendário mensal ---------- */
+.month-grid {
+  position: absolute;
+  left: var(--mx);
+  right: var(--mx);
+  top: 53mm;
+  height: 160.5mm;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  /* a 1ª linha é o cabeçalho; as demais dividem a altura por igual */
+  grid-template-rows: 10.7mm;
+  grid-auto-rows: 1fr;
+}
+.month-grid > div {
+  /* margem negativa: as bordas vizinhas se sobrepõem e ficam com espessura única */
+  margin: 0 -.75pt -.75pt 0;
+  border: .75pt solid var(--line);
+}
+.month-grid .wd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--soft);
+  font-size: 8pt;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.month-grid .day {
+  padding: 3.2mm 2.8mm;
+  font-size: 10.5pt;
+  font-weight: 700;
+}
+.month-grid .day.we { background: var(--weekend); color: var(--muted); }
+/* Opção "bordas somente nas células com data": as vazias ficam sem borda e sem fundo */
+.month-grid.only-dates .day.empty { border-color: transparent; background: none; }
+
+.priorities { position: absolute; left: var(--mx); right: var(--mx); top: 223.5mm; }
+.priorities h3 { margin: 0 0 5.2mm; font-size: 13pt; font-weight: 700; }
+.priorities .item { display: flex; align-items: flex-end; gap: 3mm; height: 11mm; padding-bottom: 0; }
+.priorities .item b {
+  width: 3.2mm;
+  height: 2.9mm;
+  margin-bottom: .4mm;
+  border: .75pt solid var(--accent);
+  border-radius: .3mm;
+}
+.priorities .item i { flex: 1; border-bottom: .75pt solid var(--line); }
+
+/* ---------- Folha pautada ---------- */
+.ruled { position: absolute; left: var(--mx); right: var(--mx); top: 57.4mm; border-top: .75pt solid var(--line); }
+.ruled i { display: block; height: var(--rule-gap, 8mm); border-bottom: .75pt solid var(--line); }
+
+/* ---------- Impressão ---------- */
+@page { size: A4 portrait; margin: 0; }
+
+@media print {
+  html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  .no-print { display: none !important; }
+  #preview { zoom: 1 !important; padding: 0 !important; margin: 0 !important; gap: 0 !important; display: block !important; }
+  .page { box-shadow: none !important; margin: 0 !important; break-after: page; page-break-after: always; }
+  .page:last-child { break-after: auto; page-break-after: auto; }
+}

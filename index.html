@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gerador de Planner — CECAPE</title>
+  <link rel="stylesheet" href="assets/css/planner.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+
+<header class="topbar no-print">
+  <div class="brand">
+    <span class="brand-bar"><i></i><i></i><i></i><i></i></span>
+    <strong>Gerador de Planner</strong>
+  </div>
+  <div class="topbar-actions">
+    <span id="page-count" class="page-count" aria-live="polite"></span>
+    <button type="button" id="btn-print" class="btn btn-primary">Imprimir / Salvar PDF</button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="panel no-print" aria-label="Opções do planner">
+    <form id="options" autocomplete="off" novalidate>
+
+      <fieldset>
+        <legend>Geral</legend>
+        <label class="field">
+          <span>Ano</span>
+          <input type="number" name="year" min="1900" max="2200" step="1" inputmode="numeric">
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Títulos</legend>
+        <label class="field">
+          <span>Título da capa</span>
+          <input type="text" name="title" maxlength="40">
+        </label>
+        <label class="field">
+          <span>Subtítulo</span>
+          <input type="text" name="subtitle" maxlength="80">
+        </label>
+        <label class="field">
+          <span>Instituição (rodapé das páginas)</span>
+          <input type="text" name="orgName" maxlength="40">
+        </label>
+        <label class="field">
+          <span>Cidade / texto do rodapé da capa</span>
+          <input type="text" name="city" maxlength="60">
+        </label>
+        <label class="field">
+          <span>Alinhamento dos títulos na capa</span>
+          <select name="titleAlign">
+            <option value="left">À esquerda</option>
+            <option value="center">Centralizado</option>
+            <option value="right">À direita</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showNameField">
+          <span>Campo para o nome na capa</span>
+        </label>
+        <label class="field" data-depends="showNameField">
+          <span>Rótulo do campo</span>
+          <input type="text" name="nameLabel" maxlength="30">
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Logotipo</legend>
+        <div class="field">
+          <span>Arquivo (PNG, JPG, WebP ou SVG — até 2 MB)</span>
+          <div class="logo-row">
+            <img id="logo-thumb" alt="Logotipo atual">
+            <div class="logo-buttons">
+              <label class="btn btn-small">
+                Trocar imagem
+                <input type="file" id="logo-file" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+              </label>
+              <button type="button" id="logo-reset" class="btn btn-small btn-ghost">Usar padrão</button>
+            </div>
+          </div>
+          <p id="logo-msg" class="msg" role="alert" hidden></p>
+          <p class="hint">A imagem fica somente neste navegador; nada é enviado para a internet.</p>
+        </div>
+
+        <div class="field">
+          <span id="lbl-logo-cover">Posição na capa</span>
+          <div class="pos-grid" role="radiogroup" aria-labelledby="lbl-logo-cover">
+            <label title="Topo, à esquerda"><input type="radio" name="logoCover" value="top-left"><i></i></label>
+            <label title="Topo, ao centro"><input type="radio" name="logoCover" value="top-center"><i></i></label>
+            <label title="Topo, à direita"><input type="radio" name="logoCover" value="top-right"><i></i></label>
+            <label title="Base, à esquerda"><input type="radio" name="logoCover" value="bottom-left"><i></i></label>
+            <label title="Base, ao centro"><input type="radio" name="logoCover" value="bottom-center"><i></i></label>
+            <label title="Base, à direita"><input type="radio" name="logoCover" value="bottom-right"><i></i></label>
+          </div>
+          <label class="check">
+            <input type="radio" name="logoCover" value="none">
+            <span>Sem logotipo na capa</span>
+          </label>
+        </div>
+        <label class="field">
+          <span>Tamanho na capa</span>
+          <select name="logoCoverSize">
+            <option value="s">Pequeno</option>
+            <option value="m">Médio</option>
+            <option value="l">Grande</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Posição nas páginas internas</span>
+          <select name="logoInner">
+            <option value="top-right">Topo, à direita</option>
+            <option value="top-left">Topo, à esquerda (títulos à direita)</option>
+            <option value="footer-center">Rodapé, ao centro</option>
+            <option value="none">Sem logotipo</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Tamanho nas páginas internas</span>
+          <select name="logoInnerSize">
+            <option value="s">Pequeno</option>
+            <option value="m">Médio</option>
+            <option value="l">Grande</option>
+          </select>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Calendário</legend>
+        <label class="check">
+          <input type="checkbox" name="showYearView">
+          <span>Incluir página "Visão anual"</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="bordersOnlyDates">
+          <span>Bordas somente nas células com data</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showPriorities">
+          <span>Bloco de prioridades abaixo do calendário</span>
+        </label>
+        <label class="field" data-depends="showPriorities">
+          <span>Título do bloco</span>
+          <input type="text" name="prioritiesTitle" maxlength="40">
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Folhas pautadas</legend>
+        <label class="check">
+          <input type="checkbox" name="ruledEnabled">
+          <span>Inserir folhas pautadas entre os meses</span>
+        </label>
+        <label class="field" data-depends="ruledEnabled">
+          <span>Quantidade de folhas entre um mês e outro</span>
+          <input type="number" name="ruledCount" min="1" max="20" step="1" inputmode="numeric">
+        </label>
+        <label class="field" data-depends="ruledEnabled">
+          <span>Título das folhas</span>
+          <input type="text" name="ruledTitle" maxlength="40">
+        </label>
+        <label class="field" data-depends="ruledEnabled">
+          <span>Espaçamento da pauta (mm)</span>
+          <input type="number" name="ruledGap" min="5" max="12" step="1" inputmode="numeric">
+        </label>
+      </fieldset>
+
+      <div class="panel-foot">
+        <button type="button" id="btn-reset" class="btn btn-ghost">Restaurar modelo original</button>
+        <p id="save-msg" class="msg" role="status" hidden></p>
+        <p class="hint">
+          Ao imprimir, escolha <strong>Salvar como PDF</strong>, papel <strong>A4</strong>,
+          margens <strong>Nenhuma</strong> e ative <strong>Gráficos de plano de fundo</strong>.
+        </p>
+      </div>
+    </form>
+  </aside>
+
+  <main class="stage">
+    <div id="preview" aria-label="Pré-visualização do planner"></div>
+  </main>
+
+</div>
+
+<noscript><p class="noscript">Este gerador precisa de JavaScript ativado no navegador.</p></noscript>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/pages.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
