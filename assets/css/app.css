@@ -75,9 +75,13 @@ body {
 .panel { background: #fff; border-bottom: 1px solid var(--ui-line); }
 .panel form { padding: 4px 16px 16px; }
 
-fieldset { margin: 0; padding: 14px 0 6px; border: 0; border-bottom: 1px solid var(--ui-line); }
-legend {
-  padding: 0;
+/* Grupos de opções recolhíveis */
+.group { border-bottom: 1px solid var(--ui-line); padding-bottom: 6px; }
+.group:not([open]) { padding-bottom: 0; }
+.group > summary {
+  padding: 13px 0;
+  cursor: pointer;
+  list-style-position: inside;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -87,7 +91,7 @@ legend {
 
 .field { display: block; margin: 10px 0; }
 .field > span { display: block; margin-bottom: 4px; font-size: 13px; color: var(--ui-muted); }
-.field input[type="text"], .field input[type="number"], .field select {
+.field input[type="text"], .field input[type="number"], .field select, .field textarea {
   width: 100%;
   min-height: 38px;
   padding: 6px 10px;
@@ -97,7 +101,11 @@ legend {
   color: var(--ui-navy);
   font: inherit;
 }
-.field input:focus, .field select:focus { outline: 3px solid #8fc3cf; outline-offset: 0; border-color: var(--ui-teal); }
+.field textarea { display: block; resize: vertical; font-size: 13px; line-height: 1.4; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.check.sub { margin-left: 26px; }
+.group > summary:focus-visible { outline: 3px solid #8fc3cf; outline-offset: 2px; }
+.field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid #8fc3cf; outline-offset: 0; border-color: var(--ui-teal); }
 .field input:invalid { border-color: var(--ui-danger); }
 
 .check { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0; cursor: pointer; }

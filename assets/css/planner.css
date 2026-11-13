@@ -85,6 +85,8 @@
   font-weight: 700;
 }
 .cover.align-center .cover-year, .cover.align-right .cover-year { margin-left: 0; }
+/* Período que cruza dois anos (ex.: 2027/2028): o texto é mais longo */
+.cover.long-year .cover-year { font-size: 74pt; margin-top: 8mm; white-space: nowrap; }
 .cover-subtitle {
   margin: 9mm 0 0;
   font-size: 16pt;
@@ -210,6 +212,7 @@
 }
 .mini-grid b { font-size: 7pt; color: var(--muted); padding-bottom: 2.2mm; }
 .mini-grid span.we { color: var(--muted); }
+.mini-grid span.hol { color: var(--accent); font-weight: 700; }
 
 /* ---------- Calendário mensal ---------- */
 .month-grid {
@@ -239,30 +242,161 @@
   color: var(--accent);
   text-transform: uppercase;
 }
+.month-grid.with-weeks { grid-template-columns: 6.5mm repeat(7, 1fr); }
+.month-grid > .wk {
+  border-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: 6.5pt;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+}
 .month-grid .day {
-  padding: 3.2mm 2.8mm;
+  padding: 3.2mm 2.8mm 1mm;
   font-size: 10.5pt;
   font-weight: 700;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
 }
 .month-grid .day.we { background: var(--weekend); color: var(--muted); }
+.month-grid .day.hol .num, .w-label.hol .num, .w-label.hol .w-dow { color: var(--accent); }
 /* Opção "bordas somente nas células com data": as vazias ficam sem borda e sem fundo */
 .month-grid.only-dates .day.empty { border-color: transparent; background: none; }
 
+.num { display: flex; align-items: center; justify-content: space-between; gap: 1mm; }
+
+/* Feriados e datas próprias dentro da célula */
+.ev {
+  margin-top: 1mm;
+  font-size: 6pt;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--muted);
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+.ev.holiday { color: var(--accent); }
+.ev.optional { font-weight: 400; font-style: italic; }
+.ev.custom { font-weight: 400; color: var(--navy); }
+
+/* Fases da lua, como vistas do hemisfério sul (crescente iluminada à esquerda) */
+.moon {
+  flex: none;
+  display: inline-block;
+  width: 2.7mm;
+  height: 2.7mm;
+  border: .6pt solid var(--navy);
+  border-radius: 50%;
+  background: #fff;
+}
+.moon.new { background: var(--navy); }
+.moon.first { background: linear-gradient(to right, #fff 50%, var(--navy) 50%); }
+.moon.last { background: linear-gradient(to right, var(--navy) 50%, #fff 50%); }
+
+.legend {
+  position: absolute;
+  right: var(--mx);
+  top: 224.5mm;
+  display: flex;
+  gap: 3.5mm;
+  font-size: 6.5pt;
+  color: var(--muted);
+}
+.legend span { display: flex; align-items: center; gap: 1mm; }
+.legend .moon { width: 2.2mm; height: 2.2mm; }
+
 .priorities { position: absolute; left: var(--mx); right: var(--mx); top: 223.5mm; }
 .priorities h3 { margin: 0 0 5.2mm; font-size: 13pt; font-weight: 700; }
-.priorities .item { display: flex; align-items: flex-end; gap: 3mm; height: 11mm; padding-bottom: 0; }
-.priorities .item b {
+
+/* Lista com caixas de seleção */
+.checks .item { display: flex; align-items: flex-end; gap: 3mm; height: 11mm; }
+.checks .item b {
   width: 3.2mm;
   height: 2.9mm;
   margin-bottom: .4mm;
   border: .75pt solid var(--accent);
   border-radius: .3mm;
 }
-.priorities .item i { flex: 1; border-bottom: .75pt solid var(--line); }
+.checks .item i { flex: 1; border-bottom: .75pt solid var(--line); }
+
+/* Linhas para escrever (blocos dentro de páginas) */
+.lines i { display: block; height: var(--rule-gap, 8mm); border-bottom: .75pt solid var(--line); }
+
+/* ---------- Área de conteúdo das páginas extras ---------- */
+.content { position: absolute; left: var(--mx); right: var(--mx); top: 55mm; bottom: 23.5mm; }
+.content h3.section { margin: 7mm 0 0; font-size: 12pt; font-weight: 700; }
+.content h3.section:first-child { margin-top: 0; }
+
+/* Metas */
+.content.goals { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6mm; }
+.goal { padding: 4mm 4.5mm; border: .75pt solid var(--line); border-top: 1.1mm solid var(--accent); overflow: hidden; }
+.goal.q1 { --accent: var(--c1); }
+.goal.q2 { --accent: var(--c2); }
+.goal.q3 { --accent: var(--c3); }
+.goal.q4 { --accent: var(--c4); }
+.goal-tag { font-size: 9pt; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+.goal h4 { margin: 4.5mm 0 0; font-size: 8pt; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.goal .checks .item { height: 8.5mm; }
+.goal-due { display: flex; align-items: flex-end; gap: 3mm; height: 11mm; font-size: 8pt; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.goal-due i { flex: 1; border-bottom: .75pt solid var(--line); }
+
+/* Hábitos */
+.habits { display: grid; grid-auto-rows: 9.5mm; }
+.habits > div { margin: 0 -.75pt -.75pt 0; border: .75pt solid var(--line); min-width: 0; }
+.habits .h-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--soft);
+  font-size: 6.5pt;
+  font-weight: 700;
+  color: var(--accent);
+}
+.habits .h-name.h-head { justify-content: flex-start; padding-left: 2.5mm; font-size: 8pt; text-transform: uppercase; }
+.habits .h-num { color: var(--navy); }
+.habits .h-head.h-cell, .habits .h-head.h-name { height: auto; }
+.habits .h-cell.we { background: var(--weekend); }
+.habits .h-head.we { background: var(--soft); color: var(--muted); }
+
+/* Semana: dias em linhas */
+.week-rows { display: grid; grid-template-rows: repeat(7, 1fr); height: 100%; border-top: .75pt solid var(--line); }
+.w-row { display: grid; grid-template-columns: 34mm 1fr; border-bottom: .75pt solid var(--line); min-height: 0; }
+.w-row .lines { align-self: end; padding-bottom: 0; }
+.w-row .lines i:last-child { border-bottom: 0; }
+.w-label { padding: 2.5mm 2.5mm 1mm; overflow: hidden; min-width: 0; }
+.w-label.we { background: var(--weekend); }
+.w-label .w-dow { display: block; font-size: 8pt; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+.w-label.we .w-dow { color: var(--muted); }
+.w-label .num { margin-top: 1mm; font-size: 17pt; font-weight: 700; justify-content: flex-start; gap: 2mm; }
+
+/* Semana: dias em colunas, com horários */
+.week-cols {
+  display: grid;
+  grid-template-columns: 8mm repeat(7, 1fr);
+  grid-template-rows: 17mm;
+  grid-auto-rows: 1fr;
+  height: 100%;
+}
+.week-cols > div { margin: 0 -.75pt -.75pt 0; border: .75pt solid var(--line); min-width: 0; min-height: 0; }
+.week-cols .w-corner, .week-cols .w-hour { border-color: transparent; }
+.week-cols .w-hour { padding-top: .8mm; font-size: 6.5pt; font-weight: 700; color: var(--muted); }
+.week-cols .w-label { padding: 1.5mm 1.8mm; background: var(--soft); }
+.week-cols .w-label .num { margin-top: .3mm; font-size: 12pt; }
+.week-cols .w-label .ev { margin-top: .3mm; font-size: 5.5pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.week-cols .w-slot.we { background: var(--weekend); }
 
 /* ---------- Folha pautada ---------- */
 .ruled { position: absolute; left: var(--mx); right: var(--mx); top: 57.4mm; border-top: .75pt solid var(--line); }
 .ruled i { display: block; height: var(--rule-gap, 8mm); border-bottom: .75pt solid var(--line); }
+
+/* Pontilhado e quadriculado (desenho vetorial) */
+.pattern-holder { position: absolute; left: var(--mx); right: var(--mx); top: 57.4mm; display: flex; justify-content: center; }
+.pattern { display: block; overflow: visible; }
+.pattern .grid-line { fill: none; stroke: var(--line); stroke-width: .2; }
+.pattern .dot { fill: none; stroke: #8fa5b3; stroke-width: .5; stroke-linecap: round; }
 
 /* ---------- Impressão ---------- */
 @page { size: A4 portrait; margin: 0; }

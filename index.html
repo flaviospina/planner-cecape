@@ -25,16 +25,46 @@
   <aside class="panel no-print" aria-label="Opções do planner">
     <form id="options" autocomplete="off" novalidate>
 
-      <fieldset>
-        <legend>Geral</legend>
+      <details class="group" open>
+        <summary>Período</summary>
+        <div class="row-2">
+          <label class="field">
+            <span>Mês inicial</span>
+            <select name="startMonth">
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Ano</span>
+            <input type="number" name="year" min="1900" max="2200" step="1" inputmode="numeric">
+          </label>
+        </div>
         <label class="field">
-          <span>Ano</span>
-          <input type="number" name="year" min="1900" max="2200" step="1" inputmode="numeric">
+          <span>Duração em meses (1 a 18)</span>
+          <input type="number" name="monthCount" min="1" max="18" step="1" inputmode="numeric">
         </label>
-      </fieldset>
+        <label class="field">
+          <span>A semana começa</span>
+          <select name="weekStart">
+            <option value="mon">Na segunda-feira</option>
+            <option value="sun">No domingo</option>
+          </select>
+        </label>
+      </details>
 
-      <fieldset>
-        <legend>Títulos</legend>
+      <details class="group" open>
+        <summary>Títulos</summary>
         <label class="field">
           <span>Título da capa</span>
           <input type="text" name="title" maxlength="40">
@@ -67,10 +97,10 @@
           <span>Rótulo do campo</span>
           <input type="text" name="nameLabel" maxlength="30">
         </label>
-      </fieldset>
+      </details>
 
-      <fieldset>
-        <legend>Logotipo</legend>
+      <details class="group">
+        <summary>Logotipo</summary>
         <div class="field">
           <span>Arquivo (PNG, JPG, WebP ou SVG — até 2 MB)</span>
           <div class="logo-row">
@@ -128,10 +158,10 @@
             <option value="l">Grande</option>
           </select>
         </label>
-      </fieldset>
+      </details>
 
-      <fieldset>
-        <legend>Calendário</legend>
+      <details class="group">
+        <summary>Calendário</summary>
         <label class="check">
           <input type="checkbox" name="showYearView">
           <span>Incluir página "Visão anual"</span>
@@ -141,6 +171,29 @@
           <span>Bordas somente nas células com data</span>
         </label>
         <label class="check">
+          <input type="checkbox" name="showWeekNumbers">
+          <span>Número da semana (ISO)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showHolidays">
+          <span>Feriados nacionais</span>
+        </label>
+        <label class="check sub" data-depends="showHolidays">
+          <input type="checkbox" name="showOptionalHolidays">
+          <span>Pontos facultativos (Carnaval, Cinzas, Corpus Christi)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showMoon">
+          <span>Fases da lua (horário de Brasília)</span>
+        </label>
+        <label class="field">
+          <span>Datas próprias (uma por linha)</span>
+          <textarea name="customDates" rows="4" maxlength="6000" spellcheck="false"
+            placeholder="15/10 Dia do Professor&#10;01/02/2027 Início das aulas"></textarea>
+        </label>
+        <p id="dates-msg" class="msg" role="alert" hidden></p>
+        <p class="hint">Use <strong>DD/MM Texto</strong> (repete todo ano) ou <strong>DD/MM/AAAA Texto</strong>.</p>
+        <label class="check">
           <input type="checkbox" name="showPriorities">
           <span>Bloco de prioridades abaixo do calendário</span>
         </label>
@@ -148,13 +201,49 @@
           <span>Título do bloco</span>
           <input type="text" name="prioritiesTitle" maxlength="40">
         </label>
-      </fieldset>
+      </details>
 
-      <fieldset>
-        <legend>Folhas pautadas</legend>
+      <details class="group">
+        <summary>Páginas extras</summary>
+        <label class="check">
+          <input type="checkbox" name="showGoals">
+          <span>Metas (após a visão anual)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showHabits">
+          <span>Hábitos (uma página por mês)</span>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showWeekly">
+          <span>Páginas semanais</span>
+        </label>
+        <label class="field" data-depends="showWeekly">
+          <span>Formato da semana</span>
+          <select name="weeklyLayout">
+            <option value="rows">Dias em linhas</option>
+            <option value="columns">Dias em colunas, com horários (7h às 22h)</option>
+          </select>
+        </label>
+        <label class="check">
+          <input type="checkbox" name="showReview">
+          <span>Revisão do mês</span>
+        </label>
+      </details>
+
+      <details class="group">
+        <summary>Folhas de anotações</summary>
         <label class="check">
           <input type="checkbox" name="ruledEnabled">
-          <span>Inserir folhas pautadas entre os meses</span>
+          <span>Inserir folhas de anotações entre os meses</span>
+        </label>
+        <label class="field" data-depends="ruledEnabled">
+          <span>Tipo de folha</span>
+          <select name="ruledStyle">
+            <option value="lines">Pautada (linhas)</option>
+            <option value="dots">Pontilhada</option>
+            <option value="grid">Quadriculada</option>
+            <option value="blank">Em branco</option>
+          </select>
         </label>
         <label class="field" data-depends="ruledEnabled">
           <span>Quantidade de folhas entre um mês e outro</span>
@@ -165,10 +254,10 @@
           <input type="text" name="ruledTitle" maxlength="40">
         </label>
         <label class="field" data-depends="ruledEnabled">
-          <span>Espaçamento da pauta (mm)</span>
+          <span>Espaçamento da pauta ou da malha (mm)</span>
           <input type="number" name="ruledGap" min="5" max="12" step="1" inputmode="numeric">
         </label>
-      </fieldset>
+      </details>
 
       <div class="panel-foot">
         <button type="button" id="btn-reset" class="btn btn-ghost">Restaurar modelo original</button>
@@ -190,6 +279,7 @@
 <noscript><p class="noscript">Este gerador precisa de JavaScript ativado no navegador.</p></noscript>
 
 <script src="assets/js/config.js"></script>
+<script src="assets/js/calendar.js"></script>
 <script src="assets/js/pages.js"></script>
 <script src="assets/js/app.js"></script>
 </body>

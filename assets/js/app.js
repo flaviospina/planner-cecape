@@ -17,6 +17,7 @@
   var logoFile = document.getElementById('logo-file');
   var logoMsg = document.getElementById('logo-msg');
   var saveMsg = document.getElementById('save-msg');
+  var datesMsg = document.getElementById('dates-msg');
 
   var cfg = Config.load();
   var renderTimer = null;
@@ -79,13 +80,17 @@
   }
 
   function render() {
-    var pages = Pages.build(cfg);
+    var result = Pages.build(cfg);
     var frag = document.createDocumentFragment();
-    pages.forEach(function (page) { frag.appendChild(page); });
+    result.pages.forEach(function (page) { frag.appendChild(page); });
     preview.replaceChildren(frag);
-    pageCount.textContent = pages.length + ' páginas';
-    document.title = (cfg.title.trim() || 'Planner') + ' ' + cfg.year +
+    pageCount.textContent = result.pages.length + ' páginas';
+    // O título da aba vira o nome sugerido do arquivo PDF.
+    document.title = (cfg.title.trim() || 'Planner') + ' ' + result.yearLabel.replace('/', '-') +
       (cfg.orgName.trim() ? ' ' + cfg.orgName.trim() : '');
+    var bad = result.customErrors;
+    showMsg(datesMsg, bad.length ? 'Não entendi ' + (bad.length === 1 ? 'a linha ' : 'as linhas ') +
+      bad.join(', ') + '. Ela' + (bad.length === 1 ? ' foi ignorada.' : 's foram ignoradas.') : '');
   }
 
   function persist() {
@@ -102,7 +107,7 @@
     updateDependents();
     persist();
     clearTimeout(renderTimer);
-    renderTimer = setTimeout(render, 120);
+    renderTimer = setTimeout(render, 200);
   }
 
   // Ao sair de um campo numérico, mostra o valor efetivamente aplicado (dentro dos limites).

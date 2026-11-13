@@ -8,7 +8,11 @@
   var DEFAULT_LOGO = 'assets/img/logo-cecape.jpg';
 
   var defaults = {
-    year: new Date().getFullYear() + 1,
+    // Período
+    year: new Date().getFullYear() + 1, // ano do primeiro mês
+    startMonth: 1,               // mês inicial (1 a 12) — permite ano letivo
+    monthCount: 12,              // duração em meses (1 a 18)
+    weekStart: 'mon',            // mon | sun
 
     // Títulos
     title: 'PLANNER',
@@ -29,29 +33,50 @@
     // Calendário
     showYearView: true,
     bordersOnlyDates: false,     // bordas apenas nas células que têm data
+    showWeekNumbers: false,      // número da semana (ISO) ao lado de cada linha
+    showHolidays: false,         // feriados nacionais
+    showOptionalHolidays: false, // pontos facultativos (Carnaval, Cinzas, Corpus Christi)
+    showMoon: false,             // fases da lua
+    customDates: '',             // datas próprias, uma por linha: "DD/MM Texto" ou "DD/MM/AAAA Texto"
     showPriorities: true,
     prioritiesTitle: 'Prioridades do mês',
 
-    // Folhas pautadas entre os meses
+    // Páginas extras
+    showGoals: false,            // metas do período (após a visão anual)
+    showHabits: false,           // tracker de hábitos (uma página por mês)
+    showWeekly: false,           // páginas semanais
+    weeklyLayout: 'rows',        // rows (dias em linhas) | columns (dias em colunas, com horários)
+    showReview: false,           // revisão do mês
+
+    // Folhas de anotações entre os meses
     ruledEnabled: true,
     ruledCount: 1,               // quantidade de folhas entre um mês e o seguinte
+    ruledStyle: 'lines',         // lines | dots | grid | blank
     ruledTitle: 'Anotações',
     ruledGap: 8                  // espaçamento da pauta em mm
   };
 
   var limits = {
     year: [1900, 2200],
+    startMonth: [1, 12],
+    monthCount: [1, 18],
     ruledCount: [1, 20],
     ruledGap: [5, 12]
   };
 
   var enums = {
+    weekStart: ['mon', 'sun'],
     titleAlign: ['left', 'center', 'right'],
     logoCover: ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right', 'none'],
     logoCoverSize: ['s', 'm', 'l'],
     logoInner: ['top-right', 'top-left', 'footer-center', 'none'],
-    logoInnerSize: ['s', 'm', 'l']
+    logoInnerSize: ['s', 'm', 'l'],
+    weeklyLayout: ['rows', 'columns'],
+    ruledStyle: ['lines', 'dots', 'grid', 'blank']
   };
+
+  // Tamanho máximo dos textos (o padrão é 80 caracteres).
+  var maxLength = { logoSrc: 4000000, customDates: 6000 };
 
   function clampInt(value, range, fallback) {
     var n = parseInt(value, 10);
@@ -73,7 +98,7 @@
       } else if (enums[key]) {
         cfg[key] = enums[key].indexOf(val) >= 0 ? val : def;
       } else {
-        cfg[key] = typeof val === 'string' ? val.slice(0, key === 'logoSrc' ? 4000000 : 80) : def;
+        cfg[key] = typeof val === 'string' ? val.slice(0, maxLength[key] || 80) : def;
       }
     });
     // O logotipo só pode ser o arquivo padrão ou uma imagem embutida (data URL).
