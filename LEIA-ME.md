@@ -128,6 +128,14 @@ outra pessoa, lembre que ele leva os nomes junto.
 
 Confira no cPanel > **Selecionar versão do PHP** se a pasta usa PHP 8.2 ou superior.
 
+### Servidor com nginx (sem Apache)
+
+Os arquivos `.htaccess` só valem em servidores Apache. Com nginx + PHP-FPM (caso do servidor do
+CECAPE), eles são ignorados, e o bloqueio das pastas `app`, `sql`, `logs` e `docs` e dos arquivos
+ocultos precisa estar na configuração do nginx. As regras prontas estão em
+`docs/nginx-planner.conf`, com duas opções: liberar só a prévia de compartilhamento ou liberar o
+planner inteiro para a internet.
+
 ### Imagem de compartilhamento (WhatsApp, Facebook, LinkedIn)
 
 O `index.html` já tem as metatags de compartilhamento, a imagem (`assets/img/compartilhar.jpg`,
