@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).server = 4;
+  (global.PlannerBuild = global.PlannerBuild || {}).server = 5;
 
   var UI = global.PlannerUI;
   var MIN_PASSWORD = 8;
@@ -169,7 +169,7 @@
         return refreshList();
       });
     }
-    return refreshList();
+    return Promise.resolve(refreshList());
   }
 
   function onLogin() {
@@ -188,8 +188,10 @@
         if (!res) { return; }
         user = res.data.user;
         csrf = res.data.csrf;
-        UI.toast('success', res.mensagem);
-        afterLogin();
+        // Reabre a caixa de modelos, agora com a lista do servidor.
+        afterLogin().then(function () {
+          if (user) { global.PlannerApp.openGroup('models'); }
+        });
       });
     });
   }

@@ -542,7 +542,10 @@
 .page.big .cover-name span, .page.big .cover-city { font-size: 11pt; }
 .page.big .tabs .tab { font-size: 6.5pt; }
 
-/* ---------- Livreto A5: duas páginas por folha A4 deitada ---------- */
+/* ---------- Formatos A5 ----------
+ * As folhas (.sheet) só existem durante a impressão: duas páginas A5 lado a lado em uma A4 deitada.
+ * No formato A5 simples, cada página é apenas reduzida para caber na folha A5.
+ */
 .sheet { display: flex; width: 297mm; height: 210mm; overflow: hidden; background: #fff; }
 .sheet .page { flex: none; zoom: .70714; }
 .page.blank { background: #fff; }
@@ -559,4 +562,5 @@
   .sheet { box-shadow: none !important; break-after: page; page-break-after: always; }
   .sheet:last-child { break-after: auto; page-break-after: auto; }
   .sheet .page, .sheet .page:last-child { break-after: auto; page-break-after: auto; }
+  #preview[data-paper="a5"] > .page { zoom: .70714; }
 }

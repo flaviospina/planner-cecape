@@ -4,18 +4,24 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).pages = 4;
+  (global.PlannerBuild = global.PlannerBuild || {}).pages = 5;
 
   var Cal = global.PlannerCalendar;
 
-  var MONTHS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-  var MONTHS_SHORT = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  // Índice = dia da semana do JavaScript (0 = domingo).
-  var DOW_SHORT = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  var DOW_LONG = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-  var DOW_LETTER = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-  var MOON_LABEL = { 'new': 'Lua nova', first: 'Quarto crescente', full: 'Lua cheia', last: 'Quarto minguante' };
+  var I18n = global.PlannerI18n;
+
+  // Textos do idioma escolhido; definidos em build() antes de montar as páginas.
+  var T, MONTHS, MONTHS_SHORT, DOW_SHORT, DOW_LONG, DOW_LETTER, MOON_LABEL;
+
+  function setLanguage(code) {
+    T = I18n.get(code);
+    MONTHS = T.months;
+    MONTHS_SHORT = T.monthsShort;
+    DOW_SHORT = T.dowShort;   // índice = dia da semana do JavaScript (0 = domingo)
+    DOW_LONG = T.dowLong;
+    DOW_LETTER = T.dowLetter;
+    MOON_LABEL = T.moon;
+  }
 
   var COVER_LOGO_W = { s: '55mm', m: '75mm', l: '95mm' };
   var INNER_LOGO_W = { s: '30mm', m: '39mm', l: '48mm' };
@@ -95,8 +101,8 @@
     var none = { items: [], errors: [] };
     var custom = Cal.parseCustomDates(cfg.customDates);
     var municipal = cfg.showHolidays && cfg.showMunicipalHolidays ? Cal.parseCustomDates(cfg.municipalHolidays) : none;
-    var periods = Cal.parseRanges(cfg.schoolPeriods, 'Período letivo');
-    var breaks = Cal.parseRanges(cfg.schoolBreaks, 'Recesso');
+    var periods = Cal.parseRanges(cfg.schoolPeriods, T.defaultPeriod);
+    var breaks = Cal.parseRanges(cfg.schoolBreaks, T.defaultBreak);
     var recurring = Cal.parseRecurring(cfg.recurringEvents);
     var classes = cfg.showAttendance ? Cal.parseClasses(cfg.classes) : none;
     var from = new Date(first.y, first.m, 1);
@@ -115,6 +121,7 @@
         holidays: cfg.showHolidays,
         optional: cfg.showHolidays && cfg.showOptionalHolidays,
         state: cfg.showHolidays && cfg.showStateHoliday,
+        holidayNames: T.holidays,
         lists: [{ items: municipal.items, type: 'holiday' }, { items: custom.items, type: 'custom' }]
       }),
       moon: cfg.showMoon ? Cal.moonPhases(new Date(first.y, first.m - 1, 1), new Date(last.y, last.m + 1, 28)) : {},
@@ -187,8 +194,8 @@
       var st = dayStatus(ctx, d);
       var list = ctx.events[k] || [];
 
-      if (st.period && sameDay(d, st.period.from)) { list.push({ text: 'Início: ' + st.period.text, type: 'period' }); }
-      if (st.period && sameDay(d, st.period.to)) { list.push({ text: 'Fim: ' + st.period.text, type: 'period' }); }
+      if (st.period && sameDay(d, st.period.from)) { list.push({ text: T.start + ': ' + st.period.text, type: 'period' }); }
+      if (st.period && sameDay(d, st.period.to)) { list.push({ text: T.end + ': ' + st.period.text, type: 'period' }); }
       if (st.brk && (sameDay(d, st.brk.from) || d.getDate() === 1)) { list.push({ text: st.brk.text, type: 'break' }); }
 
       // Recorrentes: não caem em feriado nem recesso; havendo períodos letivos, só dentro deles.
@@ -279,7 +286,7 @@
   function navTabs(ctx, current) {
     var tabs = el('nav', 'tabs');
     if (ctx.cfg.showYearView) {
-      tabs.appendChild(link('visao', 'tab q1' + (current === 'visao' ? ' on' : ''), 'Ano'));
+      tabs.appendChild(link('visao', 'tab q1' + (current === 'visao' ? ' on' : ''), T.tabYear));
     }
     ctx.months.forEach(function (mo) {
       var id = monthId(mo);
@@ -319,7 +326,7 @@
 
     if (cfg.showNameField) {
       var name = el('div', 'cover-name');
-      name.appendChild(el('span', '', cfg.nameLabel.trim() || 'Nome'));
+      name.appendChild(el('span', '', cfg.nameLabel.trim() || T.defaults.nameLabel));
       name.appendChild(el('i'));
       body.appendChild(name);
     }
@@ -339,7 +346,7 @@
         id: start === 0 ? 'visao' : null,
         current: 'visao',
         eyebrow: titleWithYear(ctx),
-        title: ctx.months.length === 12 ? 'Visão anual' : 'Visão geral'
+        title: ctx.months.length === 12 ? T.yearView : T.overview
       });
       var grid = el('div', 'year-grid');
       ctx.months.slice(start, start + 12).forEach(function (mo) {
@@ -377,14 +384,14 @@
       id: monthId(mo),
       current: monthId(mo),
       quarter: quarterClass(mo.m),
-      eyebrow: 'Calendário mensal  /  ' + mo.y,
+      eyebrow: T.monthlyCalendar + '  /  ' + mo.y,
       title: MONTHS[mo.m]
     });
     var linkWeeks = cfg.showLinks && cfg.showWeekly;
 
     var grid = el('div', 'month-grid' + (cfg.bordersOnlyDates ? ' only-dates' : '') +
       (cfg.showWeekNumbers ? ' with-weeks' : ''));
-    if (cfg.showWeekNumbers) { grid.appendChild(el('div', 'wk', 'Sem')); }
+    if (cfg.showWeekNumbers) { grid.appendChild(el('div', 'wk', T.weekAbbr)); }
     ctx.cols.forEach(function (dow) { grid.appendChild(el('div', 'wd', DOW_SHORT[dow])); });
 
     Cal.monthWeeks(mo.y, mo.m, cfg.weekStart).forEach(function (week) {
@@ -431,14 +438,14 @@
       }
       if (ctx.hasSchool) {
         var last = new Date(mo.y, mo.m, Cal.daysInMonth(mo.y, mo.m));
-        legend.appendChild(el('strong', '', 'Dias letivos: ' + countSchoolDays(ctx, new Date(mo.y, mo.m, 1), last)));
+        legend.appendChild(el('strong', '', T.schoolDays + ': ' + countSchoolDays(ctx, new Date(mo.y, mo.m, 1), last)));
       }
       page.appendChild(legend);
     }
 
     if (cfg.showPriorities) {
       var pri = el('div', 'priorities');
-      pri.appendChild(el('h3', '', cfg.prioritiesTitle.trim() || 'Prioridades do mês'));
+      pri.appendChild(el('h3', '', cfg.prioritiesTitle.trim() || T.defaults.prioritiesTitle));
       pri.appendChild(checkList(3));
       page.appendChild(pri);
     }
@@ -448,18 +455,18 @@
   // ----- Metas -----
 
   function goalsPage(ctx) {
-    var page = innerPage(ctx, { eyebrow: titleWithYear(ctx), title: 'Metas' });
+    var page = innerPage(ctx, { eyebrow: titleWithYear(ctx), title: T.goals });
     var area = contentArea(page, 'goals');
     for (var i = 1; i <= 4; i++) {
       var card = el('div', 'goal q' + i);
-      card.appendChild(el('div', 'goal-tag', 'Meta ' + i));
+      card.appendChild(el('div', 'goal-tag', T.goal + ' ' + i));
       card.appendChild(writeLines(2, 8));
-      card.appendChild(el('h4', '', 'Por que é importante'));
+      card.appendChild(el('h4', '', T.whyImportant));
       card.appendChild(writeLines(2, 8));
-      card.appendChild(el('h4', '', 'Passos'));
+      card.appendChild(el('h4', '', T.steps));
       card.appendChild(checkList(3));
       var due = el('div', 'goal-due');
-      due.appendChild(el('span', '', 'Prazo'));
+      due.appendChild(el('span', '', T.due));
       due.appendChild(el('i'));
       card.appendChild(due);
       area.appendChild(card);
@@ -473,7 +480,7 @@
     var page = innerPage(ctx, {
       quarter: quarterClass(mo.m),
       eyebrow: MONTHS[mo.m] + '  /  ' + mo.y,
-      title: 'Hábitos'
+      title: T.habits
     });
     var area = contentArea(page);
     var total = Cal.daysInMonth(mo.y, mo.m);
@@ -487,12 +494,12 @@
         table.appendChild(el('div', 'h-cell ' + kind + (isWeekend(dow) ? ' we' : ''), cellText ? cellText(d, dow) : ''));
       }
     }
-    row('h-head', 'Hábito', function (d, dow) { return DOW_LETTER[dow]; });
+    row('h-head', T.habit, function (d, dow) { return DOW_LETTER[dow]; });
     row('h-head h-num', '', function (d) { return String(d); });
     for (var i = 0; i < 12; i++) { row('', ''); }
     area.appendChild(table);
 
-    area.appendChild(el('h3', 'section', 'Observações'));
+    area.appendChild(el('h3', 'section', T.remarks));
     area.appendChild(writeLines(5, 8));
     return page;
   }
@@ -502,9 +509,9 @@
   function weekRange(start) {
     var end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
     if (start.getMonth() === end.getMonth()) {
-      return start.getDate() + ' a ' + end.getDate() + ' de ' + MONTHS[end.getMonth()].toLowerCase();
+      return T.rangeSame(start.getDate(), end.getDate(), MONTHS[end.getMonth()]);
     }
-    return start.getDate() + ' ' + MONTHS_SHORT[start.getMonth()] + ' a ' + end.getDate() + ' ' + MONTHS_SHORT[end.getMonth()];
+    return T.rangeCross(start.getDate(), MONTHS_SHORT[start.getMonth()], end.getDate(), MONTHS_SHORT[end.getMonth()]);
   }
 
   function weekPage(ctx, start) {
@@ -518,7 +525,7 @@
     var page = innerPage(ctx, {
       id: weekId(start),
       quarter: quarterClass(thursday.getMonth()),
-      eyebrow: (cfg.weeklyLayout === 'lesson' ? 'Plano de aula  /  semana ' : 'Semana ') +
+      eyebrow: (cfg.weeklyLayout === 'lesson' ? T.lessonPlan + '  /  ' + T.weekLower + ' ' : T.week + ' ') +
         Cal.isoWeek(thursday) + '  /  ' + thursday.getFullYear(),
       title: weekRange(start)
     });
@@ -541,7 +548,7 @@
     if (cfg.weeklyLayout === 'lesson') {
       // Plano de aula: uma linha por dia útil, com campo para o código da habilidade da BNCC.
       var plan = el('div', 'lesson');
-      ['Dia', 'Turma / componente', 'Habilidade BNCC (código)', 'Objetivos e conteúdo', 'Atividades e recursos', 'Avaliação']
+      T.lessonHeads
         .forEach(function (text) { plan.appendChild(el('div', 'l-head', text)); });
       days.filter(function (d) { return !isWeekend(d.getDay()); }).forEach(function (d) {
         plan.appendChild(dayLabel(d, false));
@@ -553,7 +560,7 @@
       grid.appendChild(el('div', 'w-corner'));
       days.forEach(function (d) { grid.appendChild(dayLabel(d, false)); });
       for (var hour = 7; hour <= 22; hour++) {
-        grid.appendChild(el('div', 'w-hour', hour + 'h'));
+        grid.appendChild(el('div', 'w-hour', T.hour(hour)));
         days.forEach(function (d) {
           grid.appendChild(el('div', 'w-slot' + (isWeekend(d.getDay()) ? ' we' : '')));
         });
@@ -592,10 +599,10 @@
     var page = innerPage(ctx, {
       quarter: quarterClass(mo.m),
       eyebrow: MONTHS[mo.m] + '  /  ' + mo.y,
-      title: 'Revisão do mês'
+      title: T.review
     });
     var area = contentArea(page);
-    ['O que deu certo', 'O que pode melhorar', 'Aprendizados', 'Foco do próximo mês'].forEach(function (text) {
+    T.reviewPrompts.forEach(function (text) {
       area.appendChild(el('h3', 'section', text));
       area.appendChild(writeLines(5, 7.5));
     });
@@ -605,10 +612,8 @@
   // ----- Calendário letivo: página de resumo -----
 
   function pad2(n) { return String(n).padStart(2, '0'); }
-  function shortDate(d) { return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear(); }
-  function longDate(d) {
-    return DOW_LONG[d.getDay()] + ', ' + d.getDate() + ' de ' + MONTHS[d.getMonth()].toLowerCase() + ' de ' + d.getFullYear();
-  }
+  function shortDate(d) { return T.dayMonth(pad2(d.getDate()), pad2(d.getMonth() + 1)) + '/' + d.getFullYear(); }
+  function longDate(d) { return T.longDate(DOW_LONG[d.getDay()], d.getDate(), MONTHS[d.getMonth()], d.getFullYear()); }
 
   function table(className, head) {
     var t = el('div', 'tbl ' + className);
@@ -617,25 +622,25 @@
   }
 
   function schoolSummaryPage(ctx) {
-    var page = innerPage(ctx, { eyebrow: titleWithYear(ctx), title: 'Calendário letivo' });
+    var page = innerPage(ctx, { eyebrow: titleWithYear(ctx), title: T.schoolCalendar });
     var area = contentArea(page);
     var total = 0;
 
     if (ctx.periods.length) {
-      area.appendChild(el('h3', 'section', 'Períodos letivos'));
-      var t = table('t-periods', ['Período', 'Início', 'Fim', 'Dias letivos']);
+      area.appendChild(el('h3', 'section', T.schoolPeriods));
+      var t = table('t-periods', [T.period, T.start, T.end, T.schoolDays]);
       ctx.periods.slice(0, 8).forEach(function (p) {
         var n = countSchoolDays(ctx, p.from, p.to);
         total += n;
         [p.text, shortDate(p.from), shortDate(p.to), String(n)].forEach(function (text) { t.appendChild(el('div', 'td', text)); });
       });
-      ['Total', '', '', String(total)].forEach(function (text) { t.appendChild(el('div', 'td total', text)); });
+      [T.total, '', '', String(total)].forEach(function (text) { t.appendChild(el('div', 'td total', text)); });
       area.appendChild(t);
     }
 
     if (ctx.breaks.length) {
-      area.appendChild(el('h3', 'section', 'Recessos e férias'));
-      var tb = table('t-breaks', ['Descrição', 'Início', 'Fim']);
+      area.appendChild(el('h3', 'section', T.breaks));
+      var tb = table('t-breaks', [T.description, T.start, T.end]);
       ctx.breaks.slice(0, 6).forEach(function (b) {
         [b.text, shortDate(b.from), shortDate(b.to)].forEach(function (text) { tb.appendChild(el('div', 'td', text)); });
       });
@@ -650,11 +655,11 @@
       });
     }
     if (days.length) {
-      area.appendChild(el('h3', 'section', 'Feriados e pontos facultativos'));
+      area.appendChild(el('h3', 'section', T.holidaysTitle));
       var list = el('div', 'holiday-list');
       days.slice(0, 30).forEach(function (h) {
         var item = el('div', 'h-item');
-        item.appendChild(el('b', '', pad2(h.date.getDate()) + '/' + pad2(h.date.getMonth() + 1) + ' ' + DOW_SHORT[h.date.getDay()].toLowerCase()));
+        item.appendChild(el('b', '', T.dayMonth(pad2(h.date.getDate()), pad2(h.date.getMonth() + 1)) + ' ' + DOW_SHORT[h.date.getDay()].toLowerCase()));
         item.appendChild(el('span', '', h.text));
         list.appendChild(item);
       });
@@ -662,7 +667,7 @@
     }
 
     if (!ctx.periods.length && !ctx.breaks.length && !days.length) {
-      area.appendChild(el('p', 'empty-note', 'Informe os períodos letivos, os recessos ou ative os feriados para preencher esta página.'));
+      area.appendChild(el('p', 'empty-note', T.emptyNote));
     }
     return page;
   }
@@ -677,19 +682,19 @@
     });
     var area = contentArea(page, 'meeting');
     var info = el('div', 'm-info');
-    ['Horário', 'Local', 'Coordenação'].forEach(function (text) {
+    [T.time, T.place, T.lead].forEach(function (text) {
       var field = el('div', 'm-field');
       field.appendChild(el('span', '', text));
       field.appendChild(el('i'));
       info.appendChild(field);
     });
     area.appendChild(info);
-    area.appendChild(el('h3', 'section', 'Pauta'));
+    area.appendChild(el('h3', 'section', T.agenda));
     area.appendChild(checkList(4));
-    area.appendChild(el('h3', 'section', 'Registro e deliberações'));
+    area.appendChild(el('h3', 'section', T.minutes));
     area.appendChild(writeLines(11, 7.5));
-    area.appendChild(el('h3', 'section', 'Encaminhamentos'));
-    var t = table('t-actions', ['Ação', 'Responsável', 'Prazo']);
+    area.appendChild(el('h3', 'section', T.actions));
+    var t = table('t-actions', [T.action, T.owner, T.due]);
     repeat(t, 15, function () { return el('div', 'td'); });
     area.appendChild(t);
     return page;
@@ -719,21 +724,21 @@
       for (var start = 0; start < rows; start += ATTENDANCE_ROWS) {
         var page = innerPage(ctx, {
           quarter: quarterClass(mo.m),
-          eyebrow: 'Chamada  /  ' + MONTHS[mo.m] + ' ' + mo.y,
+          eyebrow: T.attendance + '  /  ' + MONTHS[mo.m] + ' ' + mo.y,
           title: cls.name
         });
         var area = contentArea(page);
         var t = el('div', 'attendance');
         t.style.gridTemplateColumns = '7mm 46mm repeat(' + dates.length + ', 1fr) 10mm';
-        t.appendChild(el('div', 'th', 'Nº'));
-        t.appendChild(el('div', 'th name', 'Nome'));
+        t.appendChild(el('div', 'th', T.num));
+        t.appendChild(el('div', 'th name', T.name));
         dates.forEach(function (date) {
           var th = el('div', 'th date');
           th.appendChild(el('b', '', pad2(date.getDate())));
           th.appendChild(el('span', '', DOW_SHORT[date.getDay()]));
           t.appendChild(th);
         });
-        t.appendChild(el('div', 'th', 'Faltas'));
+        t.appendChild(el('div', 'th', T.absences));
         for (var i = start; i < Math.min(rows, start + ATTENDANCE_ROWS); i++) {
           t.appendChild(el('div', 'td n', String(i + 1)));
           t.appendChild(el('div', 'td name', names ? names[i] : ''));
@@ -773,12 +778,13 @@
     return sheet;
   }
 
+  // mo = mês a que a folha pertence; sem mês (null), é uma folha avulsa de fim de caderno.
   function ruledPage(ctx, mo) {
     var cfg = ctx.cfg;
     var page = innerPage(ctx, {
-      quarter: quarterClass(mo.m),
-      eyebrow: MONTHS[mo.m] + '  /  ' + mo.y,
-      title: cfg.ruledTitle.trim() || 'Anotações'
+      quarter: mo ? quarterClass(mo.m) : 'q1',
+      eyebrow: mo ? MONTHS[mo.m] + '  /  ' + mo.y : titleWithYear(ctx),
+      title: cfg.ruledTitle.trim() || T.defaults.ruledTitle
     });
     if (cfg.ruledStyle === 'lines') {
       var ruled = el('div', 'ruled');
@@ -789,12 +795,12 @@
       // Método Cornell: coluna de tópicos à esquerda, anotações à direita e resumo no rodapé.
       var cornell = el('div', 'cornell');
       var cues = el('div', 'c-cues');
-      cues.appendChild(el('span', 'c-tag', 'Tópicos e perguntas'));
+      cues.appendChild(el('span', 'c-tag', T.cues));
       var notes = el('div', 'c-notes');
-      notes.appendChild(el('span', 'c-tag', 'Anotações'));
+      notes.appendChild(el('span', 'c-tag', T.notes));
       notes.appendChild(writeLines(Math.floor(160 / cfg.ruledGap), cfg.ruledGap));
       var summary = el('div', 'c-summary');
-      summary.appendChild(el('span', 'c-tag', 'Resumo'));
+      summary.appendChild(el('span', 'c-tag', T.summary));
       cornell.appendChild(cues);
       cornell.appendChild(notes);
       cornell.appendChild(summary);
@@ -811,6 +817,7 @@
 
   // Devolve as páginas na ordem de impressão (já numeradas) e os avisos para a interface.
   function build(cfg) {
+    setLanguage(cfg.language);
     var ctx = createContext(cfg);
     var pages = [coverPage(ctx)];
     if (cfg.showYearView) { pages = pages.concat(yearPages(ctx)); }
@@ -831,8 +838,13 @@
       }
     });
 
+    // Formatos em A5: o total de páginas precisa fechar as folhas (2 por folha; 4 no livreto).
+    // O que faltar é completado com folhas de anotações, para não sobrar meia folha em branco.
+    var multiple = cfg.paper === 'booklet' ? 4 : (cfg.paper === 'a5x2' ? 2 : 1);
+    while (pages.length % multiple !== 0) { pages.push(ruledPage(ctx, null)); }
+
     // Em frente e verso (e no livreto), a margem de encadernação alterna de lado nas páginas pares.
-    var mirrored = cfg.duplex || cfg.booklet;
+    var mirrored = cfg.duplex || cfg.paper === 'booklet';
     var extra = (cfg.inkSaver ? ' eco' : '') + (cfg.highContrast ? ' hc' : '') + (cfg.largeText ? ' big' : '') +
       (mirrored ? ' mirrored' : '');
     pages.forEach(function (page, index) {

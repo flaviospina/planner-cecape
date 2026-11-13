@@ -47,7 +47,48 @@ body {
 .brand-bar i:nth-child(2) { background: #38856d; }
 .brand-bar i:nth-child(3) { background: #cb8147; }
 .brand-bar i:nth-child(4) { background: #9a5b78; }
-.topbar-actions { display: flex; align-items: center; gap: 12px; }
+.topbar-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; margin-left: auto; }
+.topbar-actions .btn, .page-count { white-space: nowrap; }
+
+/* Menu de opções: cada botão abre um grupo em uma caixa */
+/* Em telas menores o menu ocupa uma linha própria (com rolagem lateral no celular) */
+.menu { order: 3; flex: 1 1 100%; display: flex; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+@media (min-width: 1400px) {
+  .topbar { flex-wrap: nowrap; }
+  .menu { order: 0; flex: 1 1 0; }
+  .topbar-actions { flex: none; }
+}
+.menu button {
+  flex: none;
+  min-height: 38px;
+  padding: 6px 9px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 6px 6px 0 0;
+  background: none;
+  color: var(--ui-navy);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.menu button:hover { background: var(--ui-soft); }
+.menu button:focus-visible { outline: 3px solid #8fc3cf; outline-offset: -3px; }
+.menu button.on { border-bottom-color: var(--ui-teal); color: var(--ui-teal); background: var(--ui-soft); }
+
+.lang { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ui-muted); }
+/* O rótulo "Idioma" continua disponível para leitores de tela e aparece em telas largas */
+.lang span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (min-width: 1500px) { .lang span { position: static; width: auto; height: auto; clip-path: none; } }
+.lang select {
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--ui-line);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--ui-navy);
+  font: inherit;
+}
+.lang select:focus { outline: 3px solid #8fc3cf; border-color: var(--ui-teal); }
 .page-count { color: var(--ui-muted); font-size: 13px; }
 
 /* ---------- Botões ---------- */
@@ -73,24 +114,17 @@ body {
 .btn-small { min-height: 34px; padding: 5px 10px; font-size: 13px; }
 
 /* ---------- Layout ---------- */
-.layout { display: block; }
-
-.panel { background: #fff; border-bottom: 1px solid var(--ui-line); }
-.panel form { padding: 4px 16px 16px; }
-
-/* Grupos de opções recolhíveis */
-.group { border-bottom: 1px solid var(--ui-line); padding-bottom: 6px; }
-.group:not([open]) { padding-bottom: 0; }
-.group > summary {
-  padding: 13px 0;
-  cursor: pointer;
-  list-style-position: inside;
+/* ---------- Grupos de opções (abertos em caixas) ---------- */
+.group { text-align: left; font-size: 15px; line-height: 1.45; color: var(--ui-navy); }
+.group-sub {
+  margin: 14px 0 8px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--ui-teal);
 }
+.group-sub:first-child { margin-top: 0; }
 
 .field { display: block; margin: 10px 0; }
 .field > span { display: block; margin-bottom: 4px; font-size: 13px; color: var(--ui-muted); }
@@ -108,10 +142,8 @@ body {
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .check.sub, div.sub { margin-left: 26px; }
 .model-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.panel-foot > .btn { margin-top: 14px; }
 #preview .sheet { flex: none; box-shadow: 0 1px 3px rgba(21, 43, 69, .18), 0 8px 24px rgba(21, 43, 69, .10); }
 #preview .sheet .page { box-shadow: none; }
-.group > summary:focus-visible { outline: 3px solid #8fc3cf; outline-offset: 2px; }
 .field input:focus, .field select:focus, .field textarea:focus { outline: 3px solid #8fc3cf; outline-offset: 0; border-color: var(--ui-teal); }
 .field input:user-invalid { border-color: var(--ui-danger); }
 
@@ -157,11 +189,9 @@ body {
 .pos-grid input:checked + i { border: 1px solid var(--ui-teal); background: var(--ui-teal); }
 .pos-grid input:focus-visible + i { outline: 3px solid #8fc3cf; outline-offset: 1px; }
 
-.panel-foot { padding-top: 14px; }
 
 /* ---------- Modelos no servidor ---------- */
-.server { padding: 14px 16px; background: var(--ui-soft); border-bottom: 1px solid var(--ui-line); }
-.server h2 { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ui-teal); }
+.server { margin-top: 16px; padding-top: 2px; border-top: 1px solid var(--ui-line); }
 .server .hint { margin: 0 0 8px; }
 .server .field { margin: 8px 0; }
 .server-account { margin-top: 8px; }
@@ -189,27 +219,25 @@ a.btn { text-decoration: none; }
 .dlg-check input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--ui-teal); }
 
 /* ---------- Pré-visualização ---------- */
-.stage { padding: 16px 0 40px; overflow-x: hidden; }
+.stage { padding: 20px 0 40px; overflow-x: hidden; }
 #preview { display: flex; flex-direction: column; align-items: center; gap: 22px; }
 #preview .page { flex: none; box-shadow: 0 1px 3px rgba(21, 43, 69, .18), 0 8px 24px rgba(21, 43, 69, .10); }
 
 .noscript { margin: 24px; padding: 16px; background: #fff; border: 1px solid var(--ui-danger); color: var(--ui-danger); }
 
-@media (min-width: 900px) {
-  .layout { display: grid; grid-template-columns: 350px 1fr; align-items: start; }
-  .panel {
-    position: sticky;
-    top: 61px;
-    height: calc(100vh - 61px);
-    overflow-y: auto;
-    border-bottom: 0;
-    border-right: 1px solid var(--ui-line);
-  }
-  .stage { min-width: 0; padding-top: 24px; }
+/* Caixa de opções: fica à esquerda, sem bloquear a tela; a pré-visualização se ajusta ao lado */
+.settings-container { top: var(--topbar-h, 58px) !important; padding: 12px !important; }
+.settings-popup { padding: 0 0 16px !important; box-shadow: 0 2px 6px rgba(21, 43, 69, .2), 0 12px 32px rgba(21, 43, 69, .18); }
+.settings-popup .swal2-title { padding: 16px 44px 0 20px; text-align: left; font-size: 18px; }
+.settings-popup .swal2-html-container { margin: 10px 20px 0; padding: 0; overflow: visible; }
+.settings-popup .swal2-actions { margin-top: 14px; }
+
+@media (min-width: 1000px) {
+  body.settings-open .stage { padding-left: 464px; }
 }
 
 @media print {
   .swal2-container { display: none !important; }
-  .layout { display: block; }
+  #settings { display: none !important; }
   .stage { padding: 0; overflow: visible; }
 }

@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).dialogs = 4;
+  (global.PlannerBuild = global.PlannerBuild || {}).dialogs = 5;
 
   var Swal = global.Swal || null;
   var TEAL = '#1a7185';
@@ -154,5 +154,37 @@
     return { close: function () { Swal.close(); } };
   }
 
-  global.PlannerUI = { confirm: confirm, notify: notify, toast: toast, form: form, busy: busy };
+  // Painel de opções: mostra um grupo do formulário (o próprio elemento, não uma cópia) ao lado da
+  // pré-visualização, sem bloquear a tela, para que as mudanças apareçam enquanto a pessoa ajusta.
+  // onClose é chamado quando o painel fecha ou é substituído por outra caixa.
+  function panel(title, content, onClose) {
+    if (!Swal) { return false; }
+    Swal.fire({
+      title: title,
+      html: content,
+      position: 'top-start',
+      width: 440,
+      backdrop: false,
+      showCloseButton: true,
+      closeButtonAriaLabel: 'Fechar',
+      confirmButtonText: 'Concluir',
+      confirmButtonColor: TEAL,
+      focusConfirm: false,
+      returnFocus: false,
+      customClass: { popup: 'settings-popup', container: 'settings-container' },
+      showClass: { popup: '' },
+      hideClass: { popup: '' },
+      didDestroy: onClose
+    });
+    return true;
+  }
+
+  function isPanelOpen() {
+    return !!Swal && Swal.isVisible() && !!document.querySelector('.settings-popup');
+  }
+
+  global.PlannerUI = {
+    confirm: confirm, notify: notify, toast: toast, form: form, busy: busy,
+    panel: panel, isPanelOpen: isPanelOpen
+  };
 })(window);

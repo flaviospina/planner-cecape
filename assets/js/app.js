@@ -1,40 +1,83 @@
 // assets/js/app.js
-// Liga o formulário de opções à pré-visualização e à impressão.
+// Liga as opções (menu superior + caixas de grupo) à pré-visualização e à impressão.
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).app = 4;
+  (global.PlannerBuild = global.PlannerBuild || {}).app = 5;
 
   var UI = global.PlannerUI;
   var Config = global.PlannerConfig;
   var Pages = global.PlannerPages;
+  var I18n = global.PlannerI18n;
 
   var MAX_LOGO_BYTES = 2 * 1024 * 1024;
   var MAX_MODEL_BYTES = 6 * 1024 * 1024;
   var LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
   var MM = 96 / 25.4; // px CSS por milímetro
+  // Textos que acompanham o idioma enquanto a pessoa não os personalizar.
+  var LANGUAGE_DEFAULTS = ['subtitle', 'nameLabel', 'prioritiesTitle', 'ruledTitle'];
 
   var form = document.getElementById('options');
+  var settings = document.getElementById('settings');
+  var menu = document.getElementById('menu');
   var preview = document.getElementById('preview');
   var pageCount = document.getElementById('page-count');
   var logoThumb = document.getElementById('logo-thumb');
   var logoFile = document.getElementById('logo-file');
+  var logoMsg = document.getElementById('logo-msg');
   var saveMsg = document.getElementById('save-msg');
   var modelFile = document.getElementById('model-file');
 
-  // Regra @page: A4 em pé ou, no livreto, deitado.
+  // Regra @page: tamanho do papel conforme o formato escolhido.
   var pageRule = document.createElement('style');
   document.head.appendChild(pageRule);
 
   var cfg = Config.load();
   var renderTimer = null;
-  var lastResult = { pages: 0, sheets: 0 };
+  var pagesInOrder = [];   // páginas na ordem de leitura (como aparecem na pré-visualização)
+  var imposed = false;     // true enquanto as páginas estão agrupadas em folhas para imprimir
 
   function showMsg(node, text, ok) {
     if (!node) { return; }
     node.textContent = text || '';
     node.hidden = !text;
     node.classList.toggle('ok', !!ok);
+  }
+
+  // ----- Grupos de opções -----
+
+  // Os grupos saem do <form> quando vão para a caixa; o atributo form mantém os campos ligados a ele.
+  settings.querySelectorAll('input[name], select[name], textarea[name]').forEach(function (field) {
+    field.setAttribute('form', 'options');
+  });
+
+  var groups = {};
+  settings.querySelectorAll('.group[data-group]').forEach(function (node) {
+    groups[node.getAttribute('data-group')] = { node: node, home: node.parentNode, next: node.nextSibling };
+  });
+
+  // Devolve todos os grupos ao lugar de origem (a caixa pode ter sido fechada ou trocada por outra).
+  function groupsHome() {
+    Object.keys(groups).forEach(function (key) {
+      var g = groups[key];
+      if (g.node.parentNode !== g.home) {
+        g.home.insertBefore(g.node, g.next && g.next.parentNode === g.home ? g.next : null);
+      }
+    });
+    document.body.classList.remove('settings-open');
+    menu.querySelectorAll('button').forEach(function (b) { b.classList.remove('on'); });
+  }
+
+  function openGroup(key) {
+    var g = groups[key];
+    if (!g) { return; }
+    groupsHome();
+    var opened = UI.panel(g.node.getAttribute('data-title'), g.node, groupsHome);
+    if (!opened) { return; }
+    document.body.classList.add('settings-open');
+    var button = menu.querySelector('[data-open="' + key + '"]');
+    if (button) { button.classList.add('on'); }
+    fitPreview();
   }
 
   // ----- Formulário <-> configuração -----
@@ -73,16 +116,32 @@
     cfg = Config.sanitize(raw);
   }
 
-  // Esconde campos que só fazem sentido com a opção-mãe marcada.
+  // Esconde campos que só fazem sentido com a opção-mãe marcada e mostra a dica do formato de papel.
   function updateDependents() {
-    form.querySelectorAll('[data-depends]').forEach(function (node) {
+    document.querySelectorAll('[data-depends]').forEach(function (node) {
       node.classList.toggle('is-off', !cfg[node.getAttribute('data-depends')]);
+    });
+    document.querySelectorAll('[data-paper-hint]').forEach(function (node) {
+      node.hidden = node.getAttribute('data-paper-hint').split(' ').indexOf(cfg.paper) < 0;
+    });
+  }
+
+  // Ao trocar o idioma, os textos que ainda estão no padrão do idioma anterior passam para o novo.
+  function followLanguage(previous) {
+    if (previous === cfg.language) { return; }
+    var before = I18n.get(previous).defaults;
+    var after = I18n.get(cfg.language).defaults;
+    LANGUAGE_DEFAULTS.forEach(function (key) {
+      if (cfg[key] === before[key]) {
+        cfg[key] = after[key];
+        form.elements[key].value = after[key];
+      }
     });
   }
 
   // Mostra, abaixo de cada campo de texto livre, as linhas que não puderam ser lidas.
   function showLineErrors(errors) {
-    form.querySelectorAll('[data-errors]').forEach(function (node) {
+    document.querySelectorAll('[data-errors]').forEach(function (node) {
       var bad = errors[node.getAttribute('data-errors')] || [];
       var text = '';
       if (bad.length === 1) {
@@ -94,57 +153,77 @@
     });
   }
 
-  // ----- Livreto: duas páginas A5 por folha A4, na ordem de dobra -----
+  // ----- Formatos em A5: folhas com duas páginas, montadas só na hora de imprimir -----
 
-  function blankPage() {
-    var page = document.createElement('section');
-    page.className = 'page blank';
-    return page;
+  function sheetsPerPrint() {
+    return cfg.paper === 'a5x2' || cfg.paper === 'booklet' ? pagesInOrder.length / 2 : 0;
   }
 
-  // Cada folha recebe [esquerda, direita]. Para N páginas (múltiplo de 4), a folha i tem
-  // na frente N-2i e 2i+1 e, no verso, 2i+2 e N-2i-1.
-  function imposeBooklet(pages) {
-    pages = pages.slice();
-    while (pages.length % 4 !== 0) { pages.push(blankPage()); }
-    var total = pages.length;
-    var sheets = [];
-    function sheet(left, right) {
-      var node = document.createElement('div');
-      node.className = 'sheet';
-      node.appendChild(pages[left]);
-      node.appendChild(pages[right]);
-      sheets.push(node);
+  // Devolve os pares [esquerda, direita] de cada lado de folha.
+  function sheetPairs() {
+    var total = pagesInOrder.length;
+    var pairs = [];
+    var i;
+    if (cfg.paper === 'a5x2') {
+      // Em sequência: 1|2, 3|4… (para cortar ao meio).
+      for (i = 0; i < total; i += 2) { pairs.push([i, i + 1]); }
+    } else {
+      // Livreto: a folha i leva, na frente, a última página livre e a primeira; no verso, as seguintes.
+      for (i = 0; i < total / 4; i++) {
+        pairs.push([total - 1 - 2 * i, 2 * i]);
+        pairs.push([2 * i + 1, total - 2 - 2 * i]);
+      }
     }
-    for (var i = 0; i < total / 4; i++) {
-      sheet(total - 1 - 2 * i, 2 * i);
-      sheet(2 * i + 1, total - 2 - 2 * i);
-    }
-    return sheets;
+    return pairs;
+  }
+
+  function imposeForPrint() {
+    if (imposed || !sheetsPerPrint()) { return; }
+    var frag = document.createDocumentFragment();
+    sheetPairs().forEach(function (pair) {
+      var sheet = document.createElement('div');
+      sheet.className = 'sheet';
+      sheet.appendChild(pagesInOrder[pair[0]]);
+      sheet.appendChild(pagesInOrder[pair[1]]);
+      frag.appendChild(sheet);
+    });
+    preview.replaceChildren(frag);
+    imposed = true;
+  }
+
+  function restoreAfterPrint() {
+    if (!imposed) { return; }
+    var frag = document.createDocumentFragment();
+    pagesInOrder.forEach(function (page) { frag.appendChild(page); });
+    preview.replaceChildren(frag);
+    imposed = false;
   }
 
   // ----- Pré-visualização -----
 
   function fitPreview() {
-    var width = (cfg.booklet ? 297 : 210) * MM;
+    // A caixa de opções abre logo abaixo da barra superior, qualquer que seja a altura dela.
+    document.documentElement.style.setProperty('--topbar-h', document.querySelector('.topbar').offsetHeight + 'px');
     var available = preview.parentElement.clientWidth - 32;
-    var zoom = Math.min(1, Math.max(0.2, available / width));
+    var zoom = Math.min(1, Math.max(0.2, available / (210 * MM)));
     preview.style.zoom = zoom.toFixed(3);
   }
 
   function render() {
     var result = Pages.build(cfg);
-    lastResult = { pages: result.pages.length, sheets: 0 };
-    var nodes = cfg.booklet ? imposeBooklet(result.pages) : result.pages;
+    pagesInOrder = result.pages;
+    imposed = false;
     var frag = document.createDocumentFragment();
-    nodes.forEach(function (node) { frag.appendChild(node); });
+    pagesInOrder.forEach(function (page) { frag.appendChild(page); });
     preview.replaceChildren(frag);
-    if (cfg.booklet) { lastResult.sheets = nodes.length / 2; }
-    pageRule.textContent = '@page { size: A4 ' + (cfg.booklet ? 'landscape' : 'portrait') + '; margin: 0; }';
+    preview.setAttribute('data-paper', cfg.paper);
+    pageRule.textContent = '@page { size: ' +
+      (cfg.paper === 'a4' ? 'A4 portrait' : (cfg.paper === 'a5' ? 'A5 portrait' : 'A4 landscape')) + '; margin: 0; }';
     fitPreview();
 
-    pageCount.textContent = result.pages.length + ' páginas' +
-      (cfg.booklet ? ' em ' + (nodes.length / 2) + ' folhas A4' : '');
+    var sheets = sheetsPerPrint();
+    pageCount.textContent = pagesInOrder.length + ' páginas' +
+      (sheets ? ' · ' + (cfg.paper === 'booklet' ? sheets / 2 : sheets) + ' folhas A4' : (cfg.paper === 'a5' ? ' · A5' : ''));
     // O título da aba vira o nome sugerido do arquivo PDF.
     document.title = (cfg.title.trim() || 'Planner') + ' ' + result.yearLabel.replace('/', '-') +
       (cfg.orgName.trim() ? ' ' + cfg.orgName.trim() : '');
@@ -161,8 +240,11 @@
   }
 
   function onChange(event) {
-    if (event.target === logoFile || event.target === modelFile) { return; }
+    var field = event.target;
+    if (!field || field.form !== form || field === logoFile) { return; }
+    var previousLanguage = cfg.language;
     readForm();
+    followLanguage(previousLanguage);
     updateDependents();
     persist();
     clearTimeout(renderTimer);
@@ -172,41 +254,41 @@
   // Ao sair de um campo numérico, mostra o valor efetivamente aplicado (dentro dos limites).
   function onBlur(event) {
     var field = event.target;
-    if (field.type === 'number' && field.name in cfg) {
+    if (field && field.form === form && field.type === 'number' && field.name in cfg) {
       field.value = cfg[field.name];
     }
   }
 
-  // ----- Logotipo -----
+  // ----- Logotipo (as mensagens ficam dentro do próprio grupo, que está aberto em uma caixa) -----
 
   function onLogoChosen() {
     var file = logoFile.files && logoFile.files[0];
     logoFile.value = '';
     if (!file) { return; }
     if (LOGO_TYPES.indexOf(file.type) < 0) {
-      UI.notify('error', 'Formato não aceito', 'Envie uma imagem PNG, JPG, WebP ou SVG.');
+      showMsg(logoMsg, 'Formato não aceito. Envie uma imagem PNG, JPG, WebP ou SVG.');
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      UI.notify('error', 'Imagem grande demais', 'A imagem tem mais de 2 MB. Reduza o arquivo e tente novamente.');
+      showMsg(logoMsg, 'A imagem tem mais de 2 MB. Reduza o arquivo e tente novamente.');
       return;
     }
     var reader = new FileReader();
     reader.onerror = function () {
-      UI.notify('error', 'Não foi possível ler o arquivo', 'Tente novamente.');
+      showMsg(logoMsg, 'Não foi possível ler o arquivo. Tente novamente.');
     };
     reader.onload = function () {
       var probe = new Image();
       probe.onerror = function () {
-        UI.notify('error', 'Arquivo inválido', 'O arquivo escolhido não é uma imagem válida.');
+        showMsg(logoMsg, 'O arquivo escolhido não é uma imagem válida.');
       };
       probe.onload = function () {
         cfg.logoSrc = reader.result;
         cfg = Config.sanitize(cfg);
         logoThumb.src = cfg.logoSrc;
+        showMsg(logoMsg, 'Logotipo trocado.', true);
         persist();
         render();
-        UI.toast('success', 'Logotipo trocado.');
       };
       probe.src = reader.result;
     };
@@ -216,9 +298,9 @@
   function onLogoReset() {
     cfg.logoSrc = Config.DEFAULT_LOGO;
     logoThumb.src = cfg.logoSrc;
+    showMsg(logoMsg, 'Logotipo padrão restaurado.', true);
     persist();
     render();
-    UI.toast('success', 'Logotipo padrão restaurado.');
   }
 
   // ----- Exportar e importar modelo -----
@@ -233,7 +315,7 @@
     readForm();
     UI.confirm({
       title: 'Exportar modelo',
-      text: 'Será baixado um arquivo com todas as opções desta tela (inclusive o logotipo). ' +
+      text: 'Será baixado um arquivo com todas as opções do planner (inclusive o logotipo). ' +
         'Guarde-o para reaproveitar no ano seguinte ou envie a um colega, que poderá abri-lo em "Importar modelo".',
       note: hasStudentNames() ? 'Atenção: o arquivo leva junto os nomes dos alunos digitados nas turmas.' : null,
       icon: 'info',
@@ -279,7 +361,7 @@
       }
       UI.confirm({
         title: 'Importar modelo?',
-        text: 'As opções atuais desta tela serão substituídas pelas do arquivo "' + file.name + '".',
+        text: 'As opções atuais do planner serão substituídas pelas do arquivo "' + file.name + '".',
         confirmText: 'Importar'
       }).then(function (ok) {
         if (!ok) { return; }
@@ -312,6 +394,7 @@
       cfg = Config.reset();
       fillForm();
       showMsg(saveMsg, '');
+      showMsg(logoMsg, '');
       render();
       UI.toast('success', 'Modelo original restaurado.');
     });
@@ -326,23 +409,34 @@
       // Mesmo que a atualização falhe, a impressão do que está na tela continua disponível.
       if (global.console) { global.console.error(error); }
     }
-    var items = [
-      'Destino: Salvar como PDF (ou a impressora)',
-      'Papel: A4',
-      'Margens: Nenhuma',
-      'Gráficos de plano de fundo: ativado'
-    ];
-    if (cfg.booklet) {
+    var total = pagesInOrder.length;
+    var sheets = sheetsPerPrint();
+    var summary = 'Seu planner tem ' + total + ' páginas';
+    var items = ['Destino: Salvar como PDF (ou a impressora)'];
+
+    if (cfg.paper === 'a4') {
+      items.push('Papel: A4');
+    } else if (cfg.paper === 'a5') {
+      summary += ' em formato A5';
+      items.push('Papel: A5');
+    } else if (cfg.paper === 'a5x2') {
+      summary += ', duas por folha: ' + sheets + ' folhas A4 (ou ' + Math.ceil(sheets / 2) + ' em frente e verso)';
+      items.push('Papel: A4 (a orientação deitada é definida automaticamente)');
+    } else {
+      summary += ' em livreto A5: ' + (sheets / 2) + ' folhas A4 impressas dos dois lados';
+      items.push('Papel: A4 (a orientação deitada é definida automaticamente)');
       items.push('Frente e verso: virar na borda curta');
-    } else if (cfg.duplex) {
-      items.push('Frente e verso: virar na borda longa');
     }
+    items.push('Margens: Nenhuma');
+    items.push('Gráficos de plano de fundo: ativado');
+    if (cfg.paper === 'a4' && cfg.duplex) { items.push('Frente e verso: virar na borda longa'); }
+
     UI.confirm({
       title: 'Imprimir ou salvar em PDF',
-      text: 'Seu planner tem ' + lastResult.pages + ' páginas' +
-        (lastResult.sheets ? ', em ' + lastResult.sheets + ' folhas A4 (livreto A5)' : '') +
-        '. Na janela que vai abrir, confira:',
+      text: summary + '. Na janela que vai abrir, confira:',
       items: items,
+      note: cfg.paper === 'booklet' ? 'As páginas saem reorganizadas para a dobra. Depois de imprimir, dobre o maço ao meio e grampeie.' :
+        (cfg.paper === 'a5x2' ? 'Depois de imprimir, corte as folhas ao meio.' : null),
       icon: 'info',
       confirmText: 'Abrir impressão'
     }).then(function (ok) {
@@ -351,10 +445,20 @@
     });
   }
 
-  form.addEventListener('input', onChange);
-  form.addEventListener('change', onChange);
-  form.addEventListener('focusout', onBlur);
+  document.addEventListener('input', onChange);
+  document.addEventListener('change', onChange);
+  document.addEventListener('focusout', onBlur);
   form.addEventListener('submit', function (event) { event.preventDefault(); });
+  menu.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-open]');
+    if (!button) { return; }
+    // Clicar no grupo que já está aberto fecha a caixa.
+    if (button.classList.contains('on') && UI.isPanelOpen()) {
+      global.Swal.close();
+    } else {
+      openGroup(button.getAttribute('data-open'));
+    }
+  });
   logoFile.addEventListener('change', onLogoChosen);
   modelFile.addEventListener('change', onImport);
   document.getElementById('logo-reset').addEventListener('click', onLogoReset);
@@ -362,11 +466,15 @@
   document.getElementById('btn-reset').addEventListener('click', onReset);
   document.getElementById('btn-print').addEventListener('click', onPrint);
   global.addEventListener('resize', fitPreview);
+  // Vale também para Ctrl+P: as folhas A5 são montadas ao imprimir e desfeitas em seguida.
+  global.addEventListener('beforeprint', imposeForPrint);
+  global.addEventListener('afterprint', restoreAfterPrint);
 
   // Usado pelo módulo de modelos no servidor (server.js).
   global.PlannerApp = {
     getConfig: function () { readForm(); return cfg; },
-    applyConfig: applyConfig
+    applyConfig: applyConfig,
+    openGroup: openGroup
   };
 
   fillForm();

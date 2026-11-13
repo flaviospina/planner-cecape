@@ -3,7 +3,7 @@
 // Moldura das páginas administrativas em PHP (instalar.php e usuarios.php).
 declare(strict_types=1);
 
-const ASSET_VERSION = '4';
+const ASSET_VERSION = '5';
 
 /** Em páginas HTML, erros não tratados viram uma mensagem amigável (o detalhe vai para o log). */
 function page_mode(): void

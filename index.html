@@ -4,8 +4,32 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gerador de Planner — CECAPE</title>
-  <link rel="stylesheet" href="assets/css/planner.css?v=4">
-  <link rel="stylesheet" href="assets/css/app.css?v=4">
+  <meta name="description" content="Monte, personalize e imprima o seu planner em PDF: calendário mensal e semanal, calendário letivo, feriados, anotações e muito mais.">
+  <meta name="theme-color" content="#1a7185">
+  <link rel="icon" type="image/png" href="assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="assets/img/icone-180.png">
+
+  <!-- Compartilhamento (WhatsApp, Facebook, LinkedIn, X).
+       IMPORTANTE: essas redes só mostram a imagem quando o endereço é COMPLETO.
+       Depois de publicar, troque "https://SEU-DOMINIO/planner" nas três linhas marcadas
+       pelo endereço real do gerador (sem a barra no final). -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CECAPE">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="Gerador de Planner — CECAPE">
+  <meta property="og:description" content="Monte, personalize e imprima o seu planner em PDF.">
+  <meta property="og:url" content="https://SEU-DOMINIO/planner/">                              <!-- trocar -->
+  <meta property="og:image" content="https://SEU-DOMINIO/planner/assets/img/compartilhar.jpg">  <!-- trocar -->
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Gerador de Planner do CECAPE, com a prévia de um calendário mensal">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Gerador de Planner — CECAPE">
+  <meta name="twitter:description" content="Monte, personalize e imprima o seu planner em PDF.">
+  <meta name="twitter:image" content="https://SEU-DOMINIO/planner/assets/img/compartilhar.jpg"> <!-- trocar -->
+  <link rel="stylesheet" href="assets/css/planner.css?v=5">
+  <link rel="stylesheet" href="assets/css/app.css?v=5">
 </head>
 <body>
 
@@ -14,7 +38,31 @@
     <span class="brand-bar"><i></i><i></i><i></i><i></i></span>
     <strong>Gerador de Planner</strong>
   </div>
+
+  <!-- Cada botão abre as opções daquele grupo em uma caixa -->
+  <nav id="menu" class="menu" aria-label="Opções do planner">
+    <button type="button" data-open="period">Período</button>
+    <button type="button" data-open="titles">Títulos</button>
+    <button type="button" data-open="logo">Logotipo</button>
+    <button type="button" data-open="calendar">Calendário</button>
+    <button type="button" data-open="school">Letivo</button>
+    <button type="button" data-open="extras">Páginas</button>
+    <button type="button" data-open="notes">Anotações</button>
+    <button type="button" data-open="print">Impressão</button>
+    <button type="button" data-open="models">Modelos</button>
+  </nav>
+
   <div class="topbar-actions">
+    <label class="lang" title="Idioma do planner">
+      <span>Idioma</span>
+      <select name="language" form="options">
+        <option value="pt-BR">Português (Brasil)</option>
+        <option value="en-US">English (US)</option>
+        <option value="es">Español</option>
+        <option value="it">Italiano</option>
+        <option value="fr">Français</option>
+      </select>
+    </label>
     <span id="page-count" class="page-count" aria-live="polite"></span>
     <button type="button" id="btn-print" class="btn btn-primary">Imprimir / Salvar PDF</button>
   </div>
@@ -27,41 +75,16 @@
   o arquivo <code>index.html</code> e a pasta <code>assets</code> inteira, da mesma versão.
 </div>
 
-<div class="layout">
+<main class="stage">
+  <div id="preview" aria-label="Pré-visualização do planner"></div>
+</main>
 
-  <aside class="panel no-print" aria-label="Opções do planner">
-
-    <!-- Modelos guardados no servidor: só aparece quando o gerador está instalado com PHP e MySQL -->
-    <section id="server" class="server" hidden>
-      <h2>Modelos no servidor</h2>
-      <div id="server-out">
-        <p id="server-status" class="hint">Entre para guardar seus modelos e usar os compartilhados pelos colegas.</p>
-        <button type="button" id="server-login" class="btn btn-small btn-primary">Entrar</button>
-      </div>
-      <div id="server-in" hidden>
-        <p class="hint">Conectado(a) como <strong id="server-user"></strong></p>
-        <label class="field">
-          <span>Modelo</span>
-          <select id="server-list"></select>
-        </label>
-        <div class="model-buttons">
-          <button type="button" id="server-load" class="btn btn-small btn-primary">Carregar</button>
-          <button type="button" id="server-save-new" class="btn btn-small">Salvar como novo</button>
-          <button type="button" id="server-update" class="btn btn-small">Atualizar</button>
-          <button type="button" id="server-delete" class="btn btn-small btn-ghost">Excluir</button>
-        </div>
-        <div class="model-buttons server-account">
-          <a id="server-admin" class="btn btn-small btn-ghost" href="usuarios.php" hidden>Usuários</a>
-          <button type="button" id="server-password" class="btn btn-small btn-ghost">Trocar senha</button>
-          <button type="button" id="server-logout" class="btn btn-small btn-ghost">Sair</button>
-        </div>
-      </div>
-    </section>
+<!-- Grupos de opções. Ficam guardados aqui e são levados para dentro da caixa quando o menu é clicado. -->
+<div id="settings" class="no-print" hidden>
 
     <form id="options" autocomplete="off" novalidate>
 
-      <details class="group" open>
-        <summary>Período</summary>
+      <section class="group" data-group="period" data-title="Período">
         <div class="row-2">
           <label class="field">
             <span>Mês inicial</span>
@@ -96,10 +119,9 @@
             <option value="sun">No domingo</option>
           </select>
         </label>
-      </details>
+      </section>
 
-      <details class="group" open>
-        <summary>Títulos</summary>
+      <section class="group" data-group="titles" data-title="Títulos">
         <label class="field">
           <span>Título da capa</span>
           <input type="text" name="title" maxlength="40">
@@ -132,10 +154,9 @@
           <span>Rótulo do campo</span>
           <input type="text" name="nameLabel" maxlength="30">
         </label>
-      </details>
+      </section>
 
-      <details class="group">
-        <summary>Logotipo</summary>
+      <section class="group" data-group="logo" data-title="Logotipo">
         <div class="field">
           <span>Arquivo (PNG, JPG, WebP ou SVG — até 2 MB)</span>
           <div class="logo-row">
@@ -148,6 +169,7 @@
               <button type="button" id="logo-reset" class="btn btn-small btn-ghost">Usar padrão</button>
             </div>
           </div>
+          <p id="logo-msg" class="msg" role="alert" hidden></p>
           <p class="hint">A imagem fica somente neste navegador; nada é enviado para a internet.</p>
         </div>
 
@@ -192,10 +214,9 @@
             <option value="l">Grande</option>
           </select>
         </label>
-      </details>
+      </section>
 
-      <details class="group">
-        <summary>Calendário</summary>
+      <section class="group" data-group="calendar" data-title="Calendário">
         <label class="check">
           <input type="checkbox" name="showYearView">
           <span>Incluir página "Visão anual"</span>
@@ -250,10 +271,9 @@
           <span>Título do bloco</span>
           <input type="text" name="prioritiesTitle" maxlength="40">
         </label>
-      </details>
+      </section>
 
-      <details class="group">
-        <summary>Calendário letivo</summary>
+      <section class="group" data-group="school" data-title="Calendário letivo">
         <label class="field">
           <span>Períodos letivos (um por linha)</span>
           <textarea name="schoolPeriods" rows="4" maxlength="2000" spellcheck="false"
@@ -302,10 +322,9 @@
           <p class="hint">Uma linha <strong>Turma: nome | dias</strong> e, abaixo, um aluno por linha (sem nomes, a lista sai
             em branco). Os nomes ficam somente neste navegador e no PDF gerado; nada é enviado para a internet.</p>
         </div>
-      </details>
+      </section>
 
-      <details class="group">
-        <summary>Páginas extras</summary>
+      <section class="group" data-group="extras" data-title="Páginas extras">
         <label class="check">
           <input type="checkbox" name="showGoals">
           <span>Metas (após a visão anual)</span>
@@ -330,10 +349,9 @@
           <input type="checkbox" name="showReview">
           <span>Revisão do mês</span>
         </label>
-      </details>
+      </section>
 
-      <details class="group">
-        <summary>Folhas de anotações</summary>
+      <section class="group" data-group="notes" data-title="Folhas de anotações">
         <label class="check">
           <input type="checkbox" name="ruledEnabled">
           <span>Inserir folhas de anotações entre os meses</span>
@@ -360,10 +378,26 @@
           <span>Espaçamento da pauta ou da malha (mm)</span>
           <input type="number" name="ruledGap" min="5" max="12" step="1" inputmode="numeric">
         </label>
-      </details>
+      </section>
 
-      <details class="group">
-        <summary>Impressão e acessibilidade</summary>
+      <section class="group" data-group="print" data-title="Impressão e acessibilidade">
+        <label class="field">
+          <span>Formato do papel</span>
+          <select name="paper">
+            <option value="a4">A4 — uma página por folha</option>
+            <option value="a5">A5 — uma página por folha A5</option>
+            <option value="a5x2">A5 — duas páginas por folha A4, em sequência (cortar ao meio)</option>
+            <option value="booklet">A5 — livreto em folha A4 (dobrar e grampear)</option>
+          </select>
+        </label>
+        <p class="hint" data-paper-hint="a5">Coloque papel A5 na impressora. O conteúdo é o mesmo do A4, reduzido.</p>
+        <p class="hint" data-paper-hint="a5x2">Cada folha A4 deitada leva duas páginas seguidas (1 e 2, 3 e 4…).
+          Depois de imprimir, corte as folhas ao meio.</p>
+        <p class="hint" data-paper-hint="booklet">Na impressão, as páginas são reorganizadas para a dobra.
+          Imprima em frente e verso virando na <strong>borda curta</strong>, dobre o maço ao meio e grampeie.
+          A pré-visualização continua na ordem de leitura.</p>
+        <p class="hint" data-paper-hint="a5x2 booklet">Se faltarem páginas para completar a última folha,
+          o planner ganha folhas de anotações no final.</p>
         <label class="field">
           <span>Margem extra de encadernação (0 a 15 mm)</span>
           <input type="number" name="bindingMargin" min="0" max="15" step="1" inputmode="numeric">
@@ -372,12 +406,6 @@
           <input type="checkbox" name="duplex">
           <span>Frente e verso (a margem de encadernação alterna de lado)</span>
         </label>
-        <label class="check">
-          <input type="checkbox" name="booklet">
-          <span>Livreto A5 (duas páginas por folha A4, na ordem de dobra)</span>
-        </label>
-        <p class="hint" data-depends="booklet">Imprima em frente e verso, virando na <strong>borda curta</strong>;
-          depois dobre o maço ao meio e grampeie na dobra.</p>
         <label class="check">
           <input type="checkbox" name="inkSaver">
           <span>Economia de tinta (sem fundos preenchidos)</span>
@@ -394,53 +422,75 @@
           <input type="checkbox" name="showLinks">
           <span>Abas e links de navegação (PDF para tablet)</span>
         </label>
-      </details>
+      </section>
 
-      <div class="panel-foot">
-        <div class="model-buttons">
-          <button type="button" id="btn-export" class="btn btn-small">Exportar modelo</button>
-          <label class="btn btn-small">
-            Importar modelo
-            <input type="file" id="model-file" accept="application/json,.json" hidden>
-          </label>
-        </div>
-        <p class="hint">O modelo é um arquivo com todas as opções desta tela, para reaproveitar no ano seguinte
-          ou enviar a um colega. Ele inclui o logotipo e, se houver, os nomes dos alunos.</p>
-        <button type="button" id="btn-reset" class="btn btn-ghost">Restaurar modelo original</button>
-        <p id="save-msg" class="msg" role="status" hidden></p>
-        <p class="hint">
-          Ao imprimir, escolha <strong>Salvar como PDF</strong>, papel <strong>A4</strong>,
-          margens <strong>Nenhuma</strong> e ative <strong>Gráficos de plano de fundo</strong>.
-        </p>
-      </div>
     </form>
-  </aside>
 
-  <main class="stage">
-    <div id="preview" aria-label="Pré-visualização do planner"></div>
-  </main>
+    <section class="group" data-group="models" data-title="Modelos">
+      <h3 class="group-sub">Neste computador</h3>
+      <div class="model-buttons">
+        <button type="button" id="btn-export" class="btn btn-small">Exportar modelo</button>
+        <label class="btn btn-small">
+          Importar modelo
+          <input type="file" id="model-file" accept="application/json,.json" hidden>
+        </label>
+        <button type="button" id="btn-reset" class="btn btn-small btn-ghost">Restaurar modelo original</button>
+      </div>
+      <p class="hint">O modelo é um arquivo com todas as opções do planner, para reaproveitar no ano seguinte
+        ou enviar a um colega. Ele inclui o logotipo e, se houver, os nomes dos alunos.</p>
+      <p id="save-msg" class="msg" role="status" hidden></p>
+
+    <!-- Modelos guardados no servidor: só aparece quando o gerador está instalado com PHP e MySQL -->
+    <section id="server" class="server" hidden>
+      <h3 class="group-sub">No servidor</h3>
+      <div id="server-out">
+        <p id="server-status" class="hint">Entre para guardar seus modelos e usar os compartilhados pelos colegas.</p>
+        <button type="button" id="server-login" class="btn btn-small btn-primary">Entrar</button>
+      </div>
+      <div id="server-in" hidden>
+        <p class="hint">Conectado(a) como <strong id="server-user"></strong></p>
+        <label class="field">
+          <span>Modelo</span>
+          <select id="server-list"></select>
+        </label>
+        <div class="model-buttons">
+          <button type="button" id="server-load" class="btn btn-small btn-primary">Carregar</button>
+          <button type="button" id="server-save-new" class="btn btn-small">Salvar como novo</button>
+          <button type="button" id="server-update" class="btn btn-small">Atualizar</button>
+          <button type="button" id="server-delete" class="btn btn-small btn-ghost">Excluir</button>
+        </div>
+        <div class="model-buttons server-account">
+          <a id="server-admin" class="btn btn-small btn-ghost" href="usuarios.php" hidden>Usuários</a>
+          <button type="button" id="server-password" class="btn btn-small btn-ghost">Trocar senha</button>
+          <button type="button" id="server-logout" class="btn btn-small btn-ghost">Sair</button>
+        </div>
+      </div>
+    </section>
+
+    </section>
 
 </div>
 
 <noscript><p class="noscript">Este gerador precisa de JavaScript ativado no navegador.</p></noscript>
 
-<script src="assets/vendor/sweetalert2.all.min.js?v=4"></script>
-<script src="assets/js/dialogs.js?v=4"></script>
-<script src="assets/js/config.js?v=4"></script>
-<script src="assets/js/calendar.js?v=4"></script>
-<script src="assets/js/pages.js?v=4"></script>
-<script src="assets/js/app.js?v=4"></script>
-<script src="assets/js/server.js?v=4"></script>
+<script src="assets/vendor/sweetalert2.all.min.js?v=5"></script>
+<script src="assets/js/dialogs.js?v=5"></script>
+<script src="assets/js/i18n.js?v=5"></script>
+<script src="assets/js/config.js?v=5"></script>
+<script src="assets/js/calendar.js?v=5"></script>
+<script src="assets/js/pages.js?v=5"></script>
+<script src="assets/js/app.js?v=5"></script>
+<script src="assets/js/server.js?v=5"></script>
 <script>
   // Confere se todos os scripts carregaram e são da mesma versão deste index.html.
   // Ao publicar uma versão nova, o número abaixo, os "?v=" acima e o PlannerBuild de cada script mudam juntos.
   (function () {
-    var BUILD = 4;
+    var BUILD = 5;
     var built = window.PlannerBuild || {};
-    var ok = ['dialogs', 'config', 'calendar', 'pages', 'app', 'server'].every(function (name) {
+    var ok = ['dialogs', 'i18n', 'config', 'calendar', 'pages', 'app', 'server'].every(function (name) {
       return built[name] === BUILD;
     });
-    if (!ok || !window.PlannerApp) {
+    if (!ok || !window.PlannerApp || !window.Swal) {
       document.getElementById('outdated').hidden = false;
     }
   })();

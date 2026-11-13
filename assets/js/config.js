@@ -4,12 +4,14 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).config = 4;
+  (global.PlannerBuild = global.PlannerBuild || {}).config = 5;
 
   var STORAGE_KEY = 'planner_cecape_config_v1';
   var DEFAULT_LOGO = 'assets/img/logo-cecape.jpg';
 
   var defaults = {
+    language: 'pt-BR',           // idioma do planner: pt-BR | en-US | es | it | fr
+
     // Período
     year: new Date().getFullYear() + 1, // ano do primeiro mês
     startMonth: 1,               // mês inicial (1 a 12) — permite ano letivo
@@ -73,7 +75,7 @@
     // Impressão e acessibilidade
     bindingMargin: 0,            // margem extra de encadernação, em mm
     duplex: false,               // frente e verso: a margem de encadernação alterna de lado
-    booklet: false,              // livreto A5: duas páginas por folha A4, na ordem de dobra
+    paper: 'a4',                 // a4 | a5 (uma página por folha A5) | a5x2 (duas por folha A4, em sequência) | booklet (livreto)
     inkSaver: false,             // economia de tinta: sem fundos preenchidos
     largeText: false,            // fonte ampliada
     highContrast: false,         // alto contraste
@@ -90,6 +92,8 @@
   };
 
   var enums = {
+    language: ['pt-BR', 'en-US', 'es', 'it', 'fr'],
+    paper: ['a4', 'a5', 'a5x2', 'booklet'],
     weekStart: ['mon', 'sun'],
     titleAlign: ['left', 'center', 'right'],
     logoCover: ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right', 'none'],
@@ -116,6 +120,8 @@
   function sanitize(raw) {
     var cfg = {};
     raw = raw && typeof raw === 'object' ? raw : {};
+    // Modelos de versões anteriores guardavam o livreto como opção sim/não.
+    if (raw.booklet === true && raw.paper === undefined) { raw.paper = 'booklet'; }
     Object.keys(defaults).forEach(function (key) {
       var def = defaults[key];
       var val = raw[key];

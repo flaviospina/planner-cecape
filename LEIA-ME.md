@@ -11,7 +11,9 @@ O gerador funciona de duas formas:
 ## Como usar
 
 1. Abra o gerador no navegador (Chrome ou Edge recomendados).
-2. Ajuste as opções no painel à esquerda; a pré-visualização atualiza na hora.
+2. Escolha o **idioma** do planner na barra superior e ajuste as opções pelo **menu** (Período,
+   Títulos, Logotipo, Calendário, Letivo, Páginas, Anotações, Impressão, Modelos). Cada item abre
+   uma caixa ao lado da pré-visualização, que atualiza na hora; **Concluir** fecha a caixa.
 3. Clique em **Imprimir / Salvar PDF**. Uma caixa mostra o número de páginas e o que conferir na
    janela de impressão; confirme em **Abrir impressão** e escolha:
    - Destino: **Salvar como PDF**
@@ -28,6 +30,7 @@ As opções ficam guardadas no próprio navegador. O logotipo enviado não sai d
 
 | Grupo | Opções |
 |---|---|
+| Idioma | Português (Brasil), inglês (EUA), espanhol, italiano e francês |
 | Período | Mês inicial e ano (permite ano letivo), duração de 1 a 18 meses, semana começando na segunda ou no domingo |
 | Títulos | Título da capa, subtítulo, instituição (rodapé), cidade, alinhamento, campo de nome e seu rótulo |
 | Logotipo | Imagem própria (PNG/JPG/WebP/SVG até 2 MB); posição na capa (6 posições ou sem logo) e tamanho; posição nas páginas internas (topo direita/esquerda, rodapé, sem logo) e tamanho |
@@ -35,10 +38,24 @@ As opções ficam guardadas no próprio navegador. O logotipo enviado não sai d
 | Calendário letivo | Períodos letivos (bimestres); recessos e férias; eventos recorrentes (HTPC, conselhos, reuniões); página de resumo com dias letivos; pauta e ata por reunião; lista de chamada por turma |
 | Páginas extras | Metas; hábitos (uma por mês); páginas semanais (dias em linhas, colunas com horários ou plano de aula com BNCC); revisão do mês |
 | Folhas de anotações | Inserir entre os meses; **quantidade de folhas** (1 a 20); tipo (pautada, pontilhada, quadriculada, Cornell, em branco); título; espaçamento (5 a 12 mm) |
-| Impressão e acessibilidade | Margem de encadernação; frente e verso; livreto A5; economia de tinta; fonte ampliada; alto contraste; abas e links de navegação |
+| Impressão e acessibilidade | Formato do papel (A4, A5, A5 duas por folha, livreto A5); margem de encadernação; frente e verso; economia de tinta; fonte ampliada; alto contraste; abas e links de navegação |
 | Modelo | Exportar e importar todas as opções em um arquivo `.json` |
 
 Com as opções originais e o ano 2027, o resultado reproduz o modelo: 25 páginas.
+
+### Idioma
+
+O idioma vale para **tudo o que é impresso no planner**: meses, dias da semana, títulos das
+páginas, nomes dos feriados, fases da lua e formato das datas. A interface do gerador (menu e
+caixas de opções) continua em português.
+
+- Os textos que você pode editar (subtítulo, rótulo do nome, título das prioridades e das
+  anotações) acompanham o idioma enquanto estiverem no texto padrão; se você os personalizou,
+  eles são mantidos.
+- Os feriados continuam sendo os brasileiros, com o nome traduzido.
+- As listas digitadas (datas próprias, eventos recorrentes, turmas) são sempre escritas no formato
+  em português (`15/10 Texto`, `seg HTPC`).
+- Os textos ficam em `assets/js/i18n.js`; para corrigir uma tradução, basta editar esse arquivo.
 
 ### Como os dados de calendário são obtidos
 
@@ -75,8 +92,15 @@ outra pessoa, lembre que ele leva os nomes junto.
 
 - **Margem de encadernação:** espaço extra do lado da espiral ou do grampo. Com **frente e verso**,
   ela alterna de lado nas páginas pares.
-- **Livreto A5:** duas páginas por folha A4 deitada, já na ordem de dobra. Imprima em frente e
-  verso virando na **borda curta**, dobre o maço ao meio e grampeie na dobra.
+- **Formato do papel:**
+  - **A4:** uma página por folha (padrão).
+  - **A5:** uma página por folha A5; o conteúdo é o mesmo, reduzido.
+  - **A5, duas por folha A4:** páginas em sequência (1 e 2, 3 e 4…); depois é só cortar ao meio.
+  - **Livreto A5:** as páginas são reorganizadas para a dobra **somente na impressão**. Imprima
+    em frente e verso virando na **borda curta**, dobre o maço ao meio e grampeie.
+
+  A pré-visualização fica sempre na ordem de leitura. Nos dois formatos em folha A4, se faltarem
+  páginas para completar a última folha, o planner ganha folhas de anotações no final.
 - **Abas e links:** no PDF salvo pelo Chrome ou Edge, as abas dos meses e os dias (quando há
   páginas semanais) são clicáveis, para uso em tablet.
 
@@ -103,6 +127,15 @@ outra pessoa, lembre que ele leva os nomes junto.
    cadastrar os colegas. Cada um recebe uma senha provisória e é obrigado a trocá-la no primeiro acesso.
 
 Confira no cPanel > **Selecionar versão do PHP** se a pasta usa PHP 8.2 ou superior.
+
+### Imagem de compartilhamento (WhatsApp, Facebook, LinkedIn)
+
+O `index.html` já tem as metatags de compartilhamento, a imagem (`assets/img/compartilhar.jpg`,
+1200 × 630) e os ícones do site. Essas redes só mostram a imagem quando o endereço é completo,
+por isso, **depois de publicar**, abra o `index.html` no editor do cPanel e troque
+`https://SEU-DOMINIO/planner` pelo endereço real nas três linhas marcadas com `<!-- trocar -->`.
+Para conferir, use o depurador do Facebook (developers.facebook.com/tools/debug); o WhatsApp
+guarda a prévia antiga por algum tempo.
 
 ### Ao atualizar uma versão já publicada
 
@@ -145,20 +178,21 @@ logs/                    log de erros do PHP
 assets/css/planner.css   desenho das páginas do planner (tela e impressão)
 assets/css/app.css       interface do gerador e caixas de diálogo
 assets/css/admin.css     páginas administrativas
+assets/js/i18n.js        textos do planner nos cinco idiomas
 assets/js/config.js      opções padrão, validação e gravação no navegador
 assets/js/calendar.js    semanas, feriados, fases da lua, datas próprias, períodos letivos e turmas
 assets/js/pages.js       montagem das páginas do planner
 assets/js/dialogs.js     caixas de confirmação, avisos e formulários (SweetAlert2)
-assets/js/app.js         formulário, pré-visualização, impressão, exportar e importar
+assets/js/app.js         menu, caixas de opções, pré-visualização, impressão, exportar e importar
 assets/js/server.js      modelos no servidor (login, salvar, carregar, excluir)
 assets/js/admin.js       confirmações das páginas administrativas
 assets/vendor/           SweetAlert2 11.26 (licença MIT), incluído no projeto: não depende de internet
-assets/img/              logotipo padrão
+assets/img/              logotipo padrão, imagem de compartilhamento e ícones
 docs/ESTUDO-PLANNERS.md  estudo de mercado que orientou as opções
 ```
 
 ### Número de versão dos arquivos
 
-O `index.html` carrega os arquivos com `?v=4` e confere se todos são da mesma versão. Ao alterar
+O `index.html` carrega os arquivos com `?v=5` e confere se todos são da mesma versão. Ao alterar
 qualquer arquivo de `assets`, aumente juntos: os `?v=` e a constante `BUILD` no `index.html`, o
 `PlannerBuild` no início de cada script de `assets/js` e `ASSET_VERSION` em `app/view.php`.

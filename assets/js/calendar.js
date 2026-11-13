@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).calendar = 4;
+  (global.PlannerBuild = global.PlannerBuild || {}).calendar = 5;
 
   var DAY_MS = 86400000;
 
@@ -63,38 +63,41 @@
     return new Date(y, month, day);
   }
 
+  // [mês, dia, chave do nome, nome em português]. Os nomes nos outros idiomas ficam em i18n.js.
   var FIXED_HOLIDAYS = [
-    [0, 1, 'Confraternização Universal'],
-    [3, 21, 'Tiradentes'],
-    [4, 1, 'Dia do Trabalho'],
-    [8, 7, 'Independência do Brasil'],
-    [9, 12, 'Nossa Senhora Aparecida'],
-    [10, 2, 'Finados'],
-    [10, 15, 'Proclamação da República'],
-    [10, 20, 'Consciência Negra'],
-    [11, 25, 'Natal']
+    [0, 1, 'newYear', 'Confraternização Universal'],
+    [3, 21, 'tiradentes', 'Tiradentes'],
+    [4, 1, 'labour', 'Dia do Trabalho'],
+    [8, 7, 'independence', 'Independência do Brasil'],
+    [9, 12, 'aparecida', 'Nossa Senhora Aparecida'],
+    [10, 2, 'allSouls', 'Finados'],
+    [10, 15, 'republic', 'Proclamação da República'],
+    [10, 20, 'blackAwareness', 'Consciência Negra'],
+    [11, 25, 'christmas', 'Natal']
   ];
 
   // Feriados nacionais do ano. Com includeOptional, soma os pontos facultativos móveis;
   // com includeState, o feriado estadual de São Paulo (9 de julho).
-  function holidays(y, includeOptional, includeState) {
+  // names (opcional): nomes traduzidos, por chave.
+  function holidays(y, includeOptional, includeState, names) {
+    names = names || {};
     var list = FIXED_HOLIDAYS.map(function (h) {
-      return { y: y, m: h[0], d: h[1], text: h[2], type: 'holiday' };
+      return { y: y, m: h[0], d: h[1], text: names[h[2]] || h[3], type: 'holiday' };
     });
     var pascoa = easter(y);
-    function rel(days, text, type) {
+    function rel(days, key, fallback, type) {
       var dt = new Date(pascoa.getFullYear(), pascoa.getMonth(), pascoa.getDate() + days);
-      list.push({ y: y, m: dt.getMonth(), d: dt.getDate(), text: text, type: type });
+      list.push({ y: y, m: dt.getMonth(), d: dt.getDate(), text: names[key] || fallback, type: type });
     }
-    rel(-2, 'Sexta-feira Santa', 'holiday');
+    rel(-2, 'goodFriday', 'Sexta-feira Santa', 'holiday');
     if (includeState) {
-      list.push({ y: y, m: 6, d: 9, text: 'Revolução Constitucionalista (SP)', type: 'holiday' });
+      list.push({ y: y, m: 6, d: 9, text: names.spRevolution || 'Revolução Constitucionalista (SP)', type: 'holiday' });
     }
     if (includeOptional) {
-      rel(-48, 'Carnaval', 'optional');
-      rel(-47, 'Carnaval', 'optional');
-      rel(-46, 'Quarta-feira de Cinzas', 'optional');
-      rel(60, 'Corpus Christi', 'optional');
+      rel(-48, 'carnival', 'Carnaval', 'optional');
+      rel(-47, 'carnival', 'Carnaval', 'optional');
+      rel(-46, 'ashWednesday', 'Quarta-feira de Cinzas', 'optional');
+      rel(60, 'corpusChristi', 'Corpus Christi', 'optional');
     }
     return list;
   }
@@ -132,7 +135,7 @@
     }
     years.forEach(function (y) {
       if (opts.holidays) {
-        holidays(y, opts.optional, opts.state).forEach(function (h) { add(h.y, h.m, h.d, h.text, h.type); });
+        holidays(y, opts.optional, opts.state, opts.holidayNames).forEach(function (h) { add(h.y, h.m, h.d, h.text, h.type); });
       }
       // Listas de datas informadas pelo usuário: [{ items, type }]
       (opts.lists || []).forEach(function (list) {
