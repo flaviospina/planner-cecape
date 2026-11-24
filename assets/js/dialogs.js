@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).dialogs = 5;
+  (global.PlannerBuild = global.PlannerBuild || {}).dialogs = 6;
 
   var Swal = global.Swal || null;
   var TEAL = '#1a7185';

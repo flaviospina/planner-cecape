@@ -32,13 +32,13 @@ As opções ficam guardadas no próprio navegador. O logotipo enviado não sai d
 |---|---|
 | Idioma | Português (Brasil), inglês (EUA), espanhol, italiano e francês |
 | Período | Mês inicial e ano (permite ano letivo), duração de 1 a 18 meses, semana começando na segunda ou no domingo |
-| Títulos | Título da capa, subtítulo, instituição (rodapé), cidade, alinhamento, campo de nome e seu rótulo |
+| Títulos | Título da capa, subtítulo, instituição (rodapé), cidade, alinhamento, campo de nome (rótulo, nome impresso em destaque e tamanho do campo) |
 | Logotipo | Imagem própria (PNG/JPG/WebP/SVG até 2 MB); posição na capa (6 posições ou sem logo) e tamanho; posição nas páginas internas (topo direita/esquerda, rodapé, sem logo) e tamanho |
 | Calendário | Visão anual; **bordas somente nas células com data**; número da semana (ISO); feriados nacionais, estadual de SP e municipais; pontos facultativos; fases da lua; datas próprias; bloco de prioridades |
 | Calendário letivo | Períodos letivos (bimestres); recessos e férias; eventos recorrentes (HTPC, conselhos, reuniões); página de resumo com dias letivos; pauta e ata por reunião; lista de chamada por turma |
 | Páginas extras | Metas; hábitos (uma por mês); páginas semanais (dias em linhas, colunas com horários ou plano de aula com BNCC); revisão do mês |
 | Folhas de anotações | Inserir entre os meses; **quantidade de folhas** (1 a 20); tipo (pautada, pontilhada, quadriculada, Cornell, em branco); título; espaçamento (5 a 12 mm) |
-| Impressão e acessibilidade | Formato do papel (A4, A5, A5 duas por folha, livreto A5); margem de encadernação; frente e verso; economia de tinta; fonte ampliada; alto contraste; abas e links de navegação |
+| Impressão e acessibilidade | Papel (A4, Carta, Ofício, Ofício 2, A3, A5, B5); orientação retrato ou paisagem; páginas por folha (uma, duas em sequência, livreto); margem de encadernação; frente e verso; economia de tinta; fonte ampliada; alto contraste; abas e links de navegação |
 | Modelo | Exportar e importar todas as opções em um arquivo `.json` |
 
 Com as opções originais e o ano 2027, o resultado reproduz o modelo: 25 páginas.
@@ -92,14 +92,20 @@ outra pessoa, lembre que ele leva os nomes junto.
 
 - **Margem de encadernação:** espaço extra do lado da espiral ou do grampo. Com **frente e verso**,
   ela alterna de lado nas páginas pares.
-- **Formato do papel:**
-  - **A4:** uma página por folha (padrão).
-  - **A5:** uma página por folha A5; o conteúdo é o mesmo, reduzido.
-  - **A5, duas por folha A4:** páginas em sequência (1 e 2, 3 e 4…); depois é só cortar ao meio.
-  - **Livreto A5:** as páginas são reorganizadas para a dobra **somente na impressão**. Imprima
-    em frente e verso virando na **borda curta**, dobre o maço ao meio e grampeie.
+- **Papel:** A4, Carta (Letter), Ofício (Legal), Ofício 2, A3, A5 ou B5. As páginas são
+  desenhadas na proporção do A4 e ajustadas ao papel escolhido, centralizadas; em papéis de outra
+  proporção (Carta, Ofício) sobra uma margem um pouco maior em dois lados. Ao imprimir em papel,
+  selecione o mesmo tamanho nas opções da impressora.
+- **Orientação:** retrato ou **paisagem**. Em paisagem todas as páginas têm desenho próprio: capa
+  com o nome ao lado dos títulos, visão anual em 4 colunas, calendário mensal com as prioridades em
+  coluna à direita, revisão, resumo letivo e ata em duas colunas.
+- **Páginas por folha** (só em retrato):
+  - **Uma por folha** (padrão).
+  - **Duas por folha, em sequência** (1 e 2, 3 e 4…), na folha deitada; depois é só cortar ao meio.
+  - **Livreto:** as páginas são reorganizadas para a dobra **somente na impressão**. Imprima em
+    frente e verso virando na **borda curta**, dobre o maço ao meio e grampeie.
 
-  A pré-visualização fica sempre na ordem de leitura. Nos dois formatos em folha A4, se faltarem
+  A pré-visualização fica sempre na ordem de leitura. Com duas páginas por folha, se faltarem
   páginas para completar a última folha, o planner ganha folhas de anotações no final.
 - **Abas e links:** no PDF salvo pelo Chrome ou Edge, as abas dos meses e os dias (quando há
   páginas semanais) são clicáveis, para uso em tablet.
@@ -138,10 +144,16 @@ planner inteiro para a internet.
 
 ### Imagem de compartilhamento (WhatsApp, Facebook, LinkedIn)
 
-O `index.html` já tem as metatags de compartilhamento, a imagem (`assets/img/compartilhar.jpg`,
-1200 × 630) e os ícones do site, apontando para `https://sist.cecapescs.com.br/planner`.
-Essas redes só mostram a imagem quando o endereço é completo; se o gerador mudar de endereço,
-troque-o nas linhas `og:url`, `og:image` e `twitter:image` do `index.html`.
+O `index.html` tem as metatags de compartilhamento (Open Graph e Twitter), apontando para
+`https://sist.cecapescs.com.br/planner`, e duas imagens: `assets/img/compartilhar.jpg`
+(1200 × 630) e `assets/img/compartilhar-quadrada.jpg` (1200 × 1200), além dos ícones do site.
+
+Para a prévia aparecer, as redes sociais precisam conseguir abrir a página e as imagens **de fora
+da rede**. No servidor do CECAPE isso depende da regra do nginx descrita em
+`docs/nginx-planner.conf`; enquanto ela não for aplicada, o servidor responde 403 e o link sai
+sem imagem. Se o gerador mudar de endereço, troque-o nas linhas `canonical`, `og:url`, `og:image`
+e `twitter:image` do `index.html`.
+
 Para conferir, use o depurador do Facebook (developers.facebook.com/tools/debug); o WhatsApp
 guarda a prévia antiga por algum tempo.
 
@@ -201,6 +213,6 @@ docs/ESTUDO-PLANNERS.md  estudo de mercado que orientou as opções
 
 ### Número de versão dos arquivos
 
-O `index.html` carrega os arquivos com `?v=5` e confere se todos são da mesma versão. Ao alterar
+O `index.html` carrega os arquivos com `?v=6` e confere se todos são da mesma versão. Ao alterar
 qualquer arquivo de `assets`, aumente juntos: os `?v=` e a constante `BUILD` no `index.html`, o
 `PlannerBuild` no início de cada script de `assets/js` e `ASSET_VERSION` em `app/view.php`.

@@ -3,7 +3,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).app = 5;
+  (global.PlannerBuild = global.PlannerBuild || {}).app = 6;
 
   var UI = global.PlannerUI;
   var Config = global.PlannerConfig;
@@ -121,8 +121,12 @@
     document.querySelectorAll('[data-depends]').forEach(function (node) {
       node.classList.toggle('is-off', !cfg[node.getAttribute('data-depends')]);
     });
-    document.querySelectorAll('[data-paper-hint]').forEach(function (node) {
-      node.hidden = node.getAttribute('data-paper-hint').split(' ').indexOf(cfg.paper) < 0;
+    var layout = Config.effectiveLayout(cfg);
+    document.querySelectorAll('[data-layout-hint]').forEach(function (node) {
+      node.hidden = node.getAttribute('data-layout-hint').split(' ').indexOf(layout) < 0;
+    });
+    document.querySelectorAll('[data-orientation]').forEach(function (node) {
+      node.hidden = node.getAttribute('data-orientation') !== cfg.orientation;
     });
   }
 
@@ -153,38 +157,68 @@
     });
   }
 
-  // ----- Formatos em A5: folhas com duas páginas, montadas só na hora de imprimir -----
+  // ----- Papel, orientação e montagem -----
 
-  function sheetsPerPrint() {
-    return cfg.paper === 'a5x2' || cfg.paper === 'booklet' ? pagesInOrder.length / 2 : 0;
+  // Plano de impressão: tamanho da folha, páginas por folha e escala das páginas.
+  // A página é sempre desenhada em A4 (210 × 297 mm, ou 297 × 210 em paisagem) e ajustada ao papel.
+  function printPlan() {
+    var land = cfg.orientation === 'landscape';
+    var layout = Config.effectiveLayout(cfg);
+    var paper = Config.papers[cfg.paperSize];
+    var per = layout === 'single' ? 1 : 2;
+    var pageW = land ? 297 : 210;
+    var pageH = land ? 210 : 297;
+    // Paisagem e folhas com duas páginas usam o papel deitado.
+    var lying = land || per === 2;
+    var sheetW = lying ? paper.h : paper.w;
+    var sheetH = lying ? paper.w : paper.h;
+    var scale = Math.min(sheetW / per / pageW, sheetH / pageH);
+    return {
+      layout: layout, paper: paper, per: per, pageW: pageW, lying: lying,
+      sheetW: sheetW, sheetH: sheetH, scale: scale,
+      // No A4 com uma página por folha, a página já é a folha: nada a montar.
+      direct: per === 1 && Math.abs(scale - 1) < 0.001,
+      sheets: Math.ceil(pagesInOrder.length / per)
+    };
   }
 
-  // Devolve os pares [esquerda, direita] de cada lado de folha.
-  function sheetPairs() {
+  // Índices das páginas de cada lado de folha.
+  function sheetGroups(plan) {
     var total = pagesInOrder.length;
-    var pairs = [];
+    var groups = [];
     var i;
-    if (cfg.paper === 'a5x2') {
+    if (plan.layout === 'single') {
+      for (i = 0; i < total; i++) { groups.push([i]); }
+    } else if (plan.layout === 'twoup') {
       // Em sequência: 1|2, 3|4… (para cortar ao meio).
-      for (i = 0; i < total; i += 2) { pairs.push([i, i + 1]); }
+      for (i = 0; i < total; i += 2) { groups.push([i, i + 1]); }
     } else {
       // Livreto: a folha i leva, na frente, a última página livre e a primeira; no verso, as seguintes.
       for (i = 0; i < total / 4; i++) {
-        pairs.push([total - 1 - 2 * i, 2 * i]);
-        pairs.push([2 * i + 1, total - 2 - 2 * i]);
+        groups.push([total - 1 - 2 * i, 2 * i]);
+        groups.push([2 * i + 1, total - 2 - 2 * i]);
       }
     }
-    return pairs;
+    return groups;
   }
 
+  // Monta as folhas só na hora de imprimir; a pré-visualização fica sempre na ordem de leitura.
   function imposeForPrint() {
-    if (imposed || !sheetsPerPrint()) { return; }
+    var plan = printPlan();
+    if (imposed || plan.direct) { return; }
     var frag = document.createDocumentFragment();
-    sheetPairs().forEach(function (pair) {
+    sheetGroups(plan).forEach(function (group) {
       var sheet = document.createElement('div');
       sheet.className = 'sheet';
-      sheet.appendChild(pagesInOrder[pair[0]]);
-      sheet.appendChild(pagesInOrder[pair[1]]);
+      sheet.style.width = plan.sheetW + 'mm';
+      sheet.style.height = plan.sheetH + 'mm';
+      group.forEach(function (index) {
+        var half = document.createElement('div');
+        half.className = 'half';
+        pagesInOrder[index].style.zoom = plan.scale.toFixed(5);
+        half.appendChild(pagesInOrder[index]);
+        sheet.appendChild(half);
+      });
       frag.appendChild(sheet);
     });
     preview.replaceChildren(frag);
@@ -194,9 +228,16 @@
   function restoreAfterPrint() {
     if (!imposed) { return; }
     var frag = document.createDocumentFragment();
-    pagesInOrder.forEach(function (page) { frag.appendChild(page); });
+    pagesInOrder.forEach(function (page) {
+      page.style.zoom = '';
+      frag.appendChild(page);
+    });
     preview.replaceChildren(frag);
     imposed = false;
+  }
+
+  function paperName(plan) {
+    return plan.paper.label + (plan.lying ? ' deitado' : '');
   }
 
   // ----- Pré-visualização -----
@@ -204,8 +245,9 @@
   function fitPreview() {
     // A caixa de opções abre logo abaixo da barra superior, qualquer que seja a altura dela.
     document.documentElement.style.setProperty('--topbar-h', document.querySelector('.topbar').offsetHeight + 'px');
+    var pageW = cfg.orientation === 'landscape' ? 297 : 210;
     var available = preview.parentElement.clientWidth - 32;
-    var zoom = Math.min(1, Math.max(0.2, available / (210 * MM)));
+    var zoom = Math.min(1, Math.max(0.2, available / (pageW * MM)));
     preview.style.zoom = zoom.toFixed(3);
   }
 
@@ -216,14 +258,17 @@
     var frag = document.createDocumentFragment();
     pagesInOrder.forEach(function (page) { frag.appendChild(page); });
     preview.replaceChildren(frag);
-    preview.setAttribute('data-paper', cfg.paper);
-    pageRule.textContent = '@page { size: ' +
-      (cfg.paper === 'a4' ? 'A4 portrait' : (cfg.paper === 'a5' ? 'A5 portrait' : 'A4 landscape')) + '; margin: 0; }';
+    var plan = printPlan();
+    pageRule.textContent = '@page { size: ' + plan.sheetW + 'mm ' + plan.sheetH + 'mm; margin: 0; }';
     fitPreview();
 
-    var sheets = sheetsPerPrint();
-    pageCount.textContent = pagesInOrder.length + ' páginas' +
-      (sheets ? ' · ' + (cfg.paper === 'booklet' ? sheets / 2 : sheets) + ' folhas A4' : (cfg.paper === 'a5' ? ' · A5' : ''));
+    var info = pagesInOrder.length + ' páginas';
+    if (plan.per === 2) {
+      info += ' · ' + (plan.layout === 'booklet' ? plan.sheets / 2 : plan.sheets) + ' folhas ' + plan.paper.label;
+    } else if (!plan.direct || cfg.orientation === 'landscape') {
+      info += ' · ' + paperName(plan);
+    }
+    pageCount.textContent = info;
     // O título da aba vira o nome sugerido do arquivo PDF.
     document.title = (cfg.title.trim() || 'Planner') + ' ' + result.yearLabel.replace('/', '-') +
       (cfg.orgName.trim() ? ' ' + cfg.orgName.trim() : '');
@@ -409,34 +454,31 @@
       // Mesmo que a atualização falhe, a impressão do que está na tela continua disponível.
       if (global.console) { global.console.error(error); }
     }
-    var total = pagesInOrder.length;
-    var sheets = sheetsPerPrint();
-    var summary = 'Seu planner tem ' + total + ' páginas';
+    var plan = printPlan();
+    var summary = 'Seu planner tem ' + pagesInOrder.length + ' páginas';
     var items = ['Destino: Salvar como PDF (ou a impressora)'];
 
-    if (cfg.paper === 'a4') {
-      items.push('Papel: A4');
-    } else if (cfg.paper === 'a5') {
-      summary += ' em formato A5';
-      items.push('Papel: A5');
-    } else if (cfg.paper === 'a5x2') {
-      summary += ', duas por folha: ' + sheets + ' folhas A4 (ou ' + Math.ceil(sheets / 2) + ' em frente e verso)';
-      items.push('Papel: A4 (a orientação deitada é definida automaticamente)');
-    } else {
-      summary += ' em livreto A5: ' + (sheets / 2) + ' folhas A4 impressas dos dois lados';
-      items.push('Papel: A4 (a orientação deitada é definida automaticamente)');
-      items.push('Frente e verso: virar na borda curta');
+    if (plan.layout === 'twoup') {
+      summary += ', duas por folha: ' + plan.sheets + ' folhas (ou ' + Math.ceil(plan.sheets / 2) + ' em frente e verso)';
+    } else if (plan.layout === 'booklet') {
+      summary += ' em livreto: ' + (plan.sheets / 2) + ' folhas impressas dos dois lados';
     }
+    items.push('Papel: ' + plan.paper.label + (plan.lying ? ' (a orientação deitada é definida automaticamente)' : ''));
+    if (plan.layout === 'booklet') { items.push('Frente e verso: virar na borda curta'); }
     items.push('Margens: Nenhuma');
     items.push('Gráficos de plano de fundo: ativado');
-    if (cfg.paper === 'a4' && cfg.duplex) { items.push('Frente e verso: virar na borda longa'); }
+    if (plan.layout === 'single' && cfg.duplex) {
+      items.push('Frente e verso: virar na borda ' + (plan.lying ? 'curta' : 'longa'));
+    }
+    var note = plan.layout === 'booklet' ? 'As páginas saem reorganizadas para a dobra. Depois de imprimir, dobre o maço ao meio e grampeie.' :
+      (plan.layout === 'twoup' ? 'Depois de imprimir, corte as folhas ao meio.' :
+        (cfg.paperSize !== 'a4' ? 'Ao imprimir em papel, selecione ' + plan.paper.label + ' também nas opções da impressora.' : null));
 
     UI.confirm({
       title: 'Imprimir ou salvar em PDF',
       text: summary + '. Na janela que vai abrir, confira:',
       items: items,
-      note: cfg.paper === 'booklet' ? 'As páginas saem reorganizadas para a dobra. Depois de imprimir, dobre o maço ao meio e grampeie.' :
-        (cfg.paper === 'a5x2' ? 'Depois de imprimir, corte as folhas ao meio.' : null),
+      note: note,
       icon: 'info',
       confirmText: 'Abrir impressão'
     }).then(function (ok) {

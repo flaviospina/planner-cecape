@@ -111,7 +111,31 @@
   text-transform: uppercase;
 }
 .cover-name i { display: block; margin-top: 11mm; border-bottom: .75pt solid var(--c1); opacity: .7; }
+/* Nome impresso em destaque (quando informado nas opções) */
+.cover-name b {
+  display: block;
+  margin-top: 3.5mm;
+  font-size: 16pt;
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--navy);
+  overflow-wrap: anywhere;
+}
+.cover-name.has-owner i { margin-top: 2.5mm; }
+/* Tamanhos do campo do nome: grande (padrão) e extra grande; "name-m" é o do modelo original */
+.cover.name-l .cover-name { padding: 8mm 8mm 9mm; }
+.cover.name-l .cover-name span { font-size: 11.5pt; }
+.cover.name-l .cover-name b { font-size: 23pt; }
+.cover.name-l .cover-name i { margin-top: 15mm; }
+.cover.name-l .cover-name.has-owner i { margin-top: 3mm; }
+.cover.name-xl .cover-name { padding: 9mm 9mm 10mm; }
+.cover.name-xl .cover-name span { font-size: 13.5pt; }
+.cover.name-xl .cover-name b { font-size: 30pt; }
+.cover.name-xl .cover-name i { margin-top: 20mm; }
+.cover.name-xl .cover-name.has-owner i { margin-top: 3.5mm; }
 .cover-blocks { align-self: stretch; display: flex; gap: 2mm; margin-top: 24mm; }
+.cover.name-l .cover-blocks { margin-top: 17mm; }
+.cover.name-xl .cover-blocks { margin-top: 10mm; }
 .cover.no-name .cover-blocks { margin-top: 30mm; }
 .cover-blocks i { flex: 1; height: 19mm; }
 .cover-blocks i:nth-child(1) { background: var(--c1); }
@@ -332,6 +356,8 @@
 .content { position: absolute; left: var(--ml); right: var(--mr); top: 55mm; bottom: 23.5mm; }
 .content h3.section { margin: 7mm 0 0; font-size: 12pt; font-weight: 700; }
 .content h3.section:first-child { margin-top: 0; }
+/* Blocos de conteúdo (título + linhas/tabela): em paisagem são distribuídos em colunas */
+.content .blk + .blk, .content .m-cols { margin-top: 7mm; }
 
 /* Metas */
 .content.goals { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6mm; }
@@ -542,12 +568,78 @@
 .page.big .cover-name span, .page.big .cover-city { font-size: 11pt; }
 .page.big .tabs .tab { font-size: 6.5pt; }
 
-/* ---------- Formatos A5 ----------
- * As folhas (.sheet) só existem durante a impressão: duas páginas A5 lado a lado em uma A4 deitada.
- * No formato A5 simples, cada página é apenas reduzida para caber na folha A5.
+/* ---------- Orientação paisagem (página de 297 × 210 mm) ---------- */
+.page.land { width: 297mm; height: 210mm; }
+
+.land .head { top: 11mm; }
+.land .head .eyebrow { margin-top: 4.5mm; }
+.land .head .title { font-size: 28pt; }
+.land .inner-logo:not(.footer-center) { top: 11mm; }
+.land .foot { top: 191.5mm; }
+.land .tabs { top: 40mm; bottom: 21.5mm; }
+.land .content { top: 40mm; bottom: 21.5mm; }
+
+/* Capa: títulos à esquerda e campo do nome à direita */
+.land.cover .cover-logo.v-top { top: 15mm; }
+.land.cover .cover-logo.v-bottom { bottom: 11mm; }
+.land.cover .cover-body {
+  top: 64mm;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14mm;
+  align-items: start;
+  justify-items: start;
+}
+.land.cover.logo-bottom .cover-body, .land.cover.logo-none .cover-body { top: 30mm; }
+.land.cover.align-center .cover-body { justify-items: center; }
+.land.cover.align-right .cover-body { justify-items: end; }
+.land.cover .cover-body > .bar, .land.cover .cover-title, .land.cover .cover-year, .land.cover .cover-subtitle { grid-column: 1; }
+.land.cover .cover-title { margin-top: 7mm; font-size: 34pt; }
+.land.cover .cover-year { font-size: 108pt; }
+.land.cover.long-year .cover-year { font-size: 62pt; }
+.land.cover .cover-subtitle { margin-top: 5mm; }
+.land.cover .cover-name { grid-column: 2; grid-row: 1 / span 4; align-self: end; justify-self: stretch; margin-top: 0; }
+.land.cover .cover-blocks, .land.cover .cover-city { grid-column: 1 / -1; justify-self: stretch; }
+.land.cover .cover-blocks, .land.cover.no-name .cover-blocks,
+.land.cover.name-l .cover-blocks, .land.cover.name-xl .cover-blocks { margin-top: 24mm; }
+.land.cover .cover-blocks i { height: 16mm; }
+.land.cover .cover-city { margin-top: 8mm; }
+
+/* Visão anual: 4 colunas × 3 linhas */
+.land .year-grid { top: 40mm; grid-template-columns: repeat(4, 1fr); grid-auto-rows: 49mm; }
+
+/* Calendário mensal: grade à esquerda e prioridades em coluna à direita */
+.land .month-grid { top: 40mm; height: 144mm; }
+.land.has-pri .month-grid { right: calc(var(--mr) + 64mm); }
+.land .priorities { top: 40mm; left: auto; width: 58mm; }
+.land .legend { top: 186.5mm; left: var(--ml); right: auto; }
+
+/* Páginas extras */
+.land .content.goals { grid-template-columns: repeat(4, 1fr); grid-template-rows: 1fr; gap: 5mm; }
+.land .habits { grid-auto-rows: 8.2mm; }
+.land .week-rows .w-label { padding-top: 1.6mm; }
+.land .week-rows .w-label .num { margin-top: .4mm; font-size: 13pt; }
+.land .week-rows .w-label .ev { margin-top: .4mm; }
+.land .content.review { display: grid; grid-template-columns: 1fr 1fr; gap: 9mm 10mm; align-content: start; }
+.land .content.review .blk + .blk { margin-top: 0; }
+.land .content.summary { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10mm; align-content: start; }
+.land .content.summary .blk { grid-column: 1; }
+.land .content.summary .blk.hol { grid-column: 2; grid-row: 1 / span 3; margin-top: 0; }
+.land .m-cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 10mm; align-content: start; }
+.land .m-cols .m-minutes { grid-column: 2; grid-row: 1 / span 2; margin-top: 0; }
+
+/* Folhas de anotações */
+.land .ruled, .land .pattern-holder { top: 43mm; }
+.land .cornell { top: 43mm; height: 145mm; grid-template-columns: 62mm 1fr; grid-template-rows: 1fr 32mm; }
+
+/* ---------- Folhas de impressão ----------
+ * Só existem durante a impressão, quando o papel não é o A4 da própria página: cada folha (.sheet)
+ * tem o tamanho exato do papel e leva uma ou duas páginas, reduzidas ou ampliadas e centralizadas.
+ * O tamanho da folha e a escala das páginas são definidos em app.js.
  */
-.sheet { display: flex; width: 297mm; height: 210mm; overflow: hidden; background: #fff; }
-.sheet .page { flex: none; zoom: .70714; }
+.sheet { display: flex; overflow: hidden; background: #fff; }
+.sheet .half { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
+.sheet .page { flex: none; }
 .page.blank { background: #fff; }
 
 /* ---------- Impressão ---------- */
@@ -562,5 +654,4 @@
   .sheet { box-shadow: none !important; break-after: page; page-break-after: always; }
   .sheet:last-child { break-after: auto; page-break-after: auto; }
   .sheet .page, .sheet .page:last-child { break-after: auto; page-break-after: auto; }
-  #preview[data-paper="a5"] > .page { zoom: .70714; }
 }

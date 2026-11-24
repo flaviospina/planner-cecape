@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).server = 5;
+  (global.PlannerBuild = global.PlannerBuild || {}).server = 6;
 
   var UI = global.PlannerUI;
   var MIN_PASSWORD = 8;

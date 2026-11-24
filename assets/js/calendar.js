@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).calendar = 5;
+  (global.PlannerBuild = global.PlannerBuild || {}).calendar = 6;
 
   var DAY_MS = 86400000;
 

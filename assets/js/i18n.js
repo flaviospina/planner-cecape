@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).i18n = 5;
+  (global.PlannerBuild = global.PlannerBuild || {}).i18n = 6;
 
   function lower(text) { return text.toLowerCase(); }
 

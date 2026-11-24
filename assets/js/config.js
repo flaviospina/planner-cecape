@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).config = 5;
+  (global.PlannerBuild = global.PlannerBuild || {}).config = 6;
 
   var STORAGE_KEY = 'planner_cecape_config_v1';
   var DEFAULT_LOGO = 'assets/img/logo-cecape.jpg';
@@ -26,6 +26,8 @@
     titleAlign: 'left',          // left | center | right
     showNameField: true,
     nameLabel: 'Nome',
+    ownerName: '',               // nome impresso em destaque no campo da capa (vazio = linha para escrever à mão)
+    nameSize: 'l',               // tamanho do campo do nome: m (como no modelo original) | l | xl
 
     // Logotipo
     logoSrc: DEFAULT_LOGO,       // caminho do arquivo padrão ou data URL enviada pelo usuário
@@ -75,7 +77,9 @@
     // Impressão e acessibilidade
     bindingMargin: 0,            // margem extra de encadernação, em mm
     duplex: false,               // frente e verso: a margem de encadernação alterna de lado
-    paper: 'a4',                 // a4 | a5 (uma página por folha A5) | a5x2 (duas por folha A4, em sequência) | booklet (livreto)
+    paperSize: 'a4',             // a4 | letter (carta) | legal | oficio | a3 | a5 | b5
+    orientation: 'portrait',     // portrait (retrato) | landscape (paisagem)
+    layout: 'single',            // single (uma página por folha) | twoup (duas por folha, em sequência) | booklet (livreto)
     inkSaver: false,             // economia de tinta: sem fundos preenchidos
     largeText: false,            // fonte ampliada
     highContrast: false,         // alto contraste
@@ -93,7 +97,10 @@
 
   var enums = {
     language: ['pt-BR', 'en-US', 'es', 'it', 'fr'],
-    paper: ['a4', 'a5', 'a5x2', 'booklet'],
+    nameSize: ['m', 'l', 'xl'],
+    paperSize: ['a4', 'letter', 'legal', 'oficio', 'a3', 'a5', 'b5'],
+    orientation: ['portrait', 'landscape'],
+    layout: ['single', 'twoup', 'booklet'],
     weekStart: ['mon', 'sun'],
     titleAlign: ['left', 'center', 'right'],
     logoCover: ['top-left', 'top-center', 'top-right', 'bottom-left', 'bottom-center', 'bottom-right', 'none'],
@@ -122,6 +129,11 @@
     raw = raw && typeof raw === 'object' ? raw : {};
     // Modelos de versões anteriores guardavam o livreto como opção sim/não.
     if (raw.booklet === true && raw.paper === undefined) { raw.paper = 'booklet'; }
+    // ...e, depois, formato e montagem em uma única opção ("paper").
+    if (typeof raw.paper === 'string' && raw.paperSize === undefined) {
+      raw.paperSize = raw.paper === 'a5' ? 'a5' : 'a4';
+      raw.layout = raw.paper === 'a5x2' ? 'twoup' : (raw.paper === 'booklet' ? 'booklet' : 'single');
+    }
     Object.keys(defaults).forEach(function (key) {
       var def = defaults[key];
       var val = raw[key];
@@ -165,7 +177,25 @@
     return sanitize(null);
   }
 
+  // Papéis disponíveis: [largura, altura] em mm, na posição retrato, e o nome mostrado na tela.
+  var papers = {
+    a4: { w: 210, h: 297, label: 'A4' },
+    letter: { w: 215.9, h: 279.4, label: 'Carta (Letter)' },
+    legal: { w: 215.9, h: 355.6, label: 'Ofício (Legal)' },
+    oficio: { w: 216, h: 330, label: 'Ofício 2' },
+    a3: { w: 297, h: 420, label: 'A3' },
+    a5: { w: 148, h: 210, label: 'A5' },
+    b5: { w: 176, h: 250, label: 'B5' }
+  };
+
+  // Montagem efetiva: duas páginas por folha e livreto só existem na orientação retrato.
+  function effectiveLayout(cfg) {
+    return cfg.orientation === 'landscape' ? 'single' : cfg.layout;
+  }
+
   global.PlannerConfig = {
+    papers: papers,
+    effectiveLayout: effectiveLayout,
     DEFAULT_LOGO: DEFAULT_LOGO,
     defaults: defaults,
     limits: limits,

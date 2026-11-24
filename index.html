@@ -12,23 +12,35 @@
   <!-- Compartilhamento (WhatsApp, Facebook, LinkedIn, X).
        Essas redes só mostram a imagem quando o endereço é completo. Se o gerador mudar de endereço,
        troque "https://sist.cecapescs.com.br/planner" nas linhas abaixo. -->
+  <link rel="canonical" href="https://sist.cecapescs.com.br/planner/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="CECAPE">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:title" content="Gerador de Planner — CECAPE">
-  <meta property="og:description" content="Monte, personalize e imprima o seu planner em PDF.">
+  <meta property="og:description" content="Monte, personalize e imprima o seu planner em PDF: calendário mensal e semanal, calendário letivo, feriados e anotações.">
   <meta property="og:url" content="https://sist.cecapescs.com.br/planner/">
+  <!-- Imagem larga (1200 × 630): Facebook, LinkedIn, X, WhatsApp -->
   <meta property="og:image" content="https://sist.cecapescs.com.br/planner/assets/img/compartilhar.jpg">
+  <meta property="og:image:secure_url" content="https://sist.cecapescs.com.br/planner/assets/img/compartilhar.jpg">
   <meta property="og:image:type" content="image/jpeg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Gerador de Planner do CECAPE, com a prévia de um calendário mensal">
+  <!-- Imagem quadrada (1200 × 1200): aplicativos que mostram a prévia em miniatura -->
+  <meta property="og:image" content="https://sist.cecapescs.com.br/planner/assets/img/compartilhar-quadrada.jpg">
+  <meta property="og:image:secure_url" content="https://sist.cecapescs.com.br/planner/assets/img/compartilhar-quadrada.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="1200">
+  <meta property="og:image:alt" content="Gerador de Planner do CECAPE">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Gerador de Planner — CECAPE">
   <meta name="twitter:description" content="Monte, personalize e imprima o seu planner em PDF.">
   <meta name="twitter:image" content="https://sist.cecapescs.com.br/planner/assets/img/compartilhar.jpg">
-  <link rel="stylesheet" href="assets/css/planner.css?v=5">
-  <link rel="stylesheet" href="assets/css/app.css?v=5">
+  <meta name="twitter:image:alt" content="Gerador de Planner do CECAPE, com a prévia de um calendário mensal">
+
+  <link rel="stylesheet" href="assets/css/planner.css?v=6">
+  <link rel="stylesheet" href="assets/css/app.css?v=6">
 </head>
 <body>
 
@@ -150,8 +162,21 @@
           <span>Campo para o nome na capa</span>
         </label>
         <label class="field" data-depends="showNameField">
-          <span>Rótulo do campo</span>
+          <span>Rótulo do campo (texto pequeno, ex.: Nome)</span>
           <input type="text" name="nameLabel" maxlength="30">
+        </label>
+        <label class="field" data-depends="showNameField">
+          <span>Nome impresso em destaque (opcional)</span>
+          <input type="text" name="ownerName" maxlength="60" placeholder="Ex.: Prof.ª Maria da Silva">
+        </label>
+        <p class="hint" data-depends="showNameField">Em branco, a capa sai com a linha para escrever o nome à mão.</p>
+        <label class="field" data-depends="showNameField">
+          <span>Tamanho do campo do nome</span>
+          <select name="nameSize">
+            <option value="m">Normal (como no modelo original)</option>
+            <option value="l">Grande</option>
+            <option value="xl">Extra grande</option>
+          </select>
         </label>
       </section>
 
@@ -380,22 +405,45 @@
       </section>
 
       <section class="group" data-group="print" data-title="Impressão e acessibilidade">
-        <label class="field">
-          <span>Formato do papel</span>
-          <select name="paper">
-            <option value="a4">A4 — uma página por folha</option>
-            <option value="a5">A5 — uma página por folha A5</option>
-            <option value="a5x2">A5 — duas páginas por folha A4, em sequência (cortar ao meio)</option>
-            <option value="booklet">A5 — livreto em folha A4 (dobrar e grampear)</option>
+        <div class="row-2">
+          <label class="field">
+            <span>Papel</span>
+            <select name="paperSize">
+              <option value="a4">A4</option>
+              <option value="letter">Carta (Letter)</option>
+              <option value="legal">Ofício (Legal)</option>
+              <option value="oficio">Ofício 2</option>
+              <option value="a3">A3</option>
+              <option value="a5">A5</option>
+              <option value="b5">B5</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Orientação</span>
+            <select name="orientation">
+              <option value="portrait">Retrato (em pé)</option>
+              <option value="landscape">Paisagem (deitado)</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">As páginas são desenhadas na proporção do A4 e ajustadas ao papel escolhido,
+          centralizadas; em papéis de outra proporção sobra uma margem maior em dois lados.</p>
+        <label class="field" data-orientation="portrait">
+          <span>Páginas por folha</span>
+          <select name="layout">
+            <option value="single">Uma página por folha</option>
+            <option value="twoup">Duas por folha, em sequência (cortar ao meio)</option>
+            <option value="booklet">Livreto (dobrar e grampear)</option>
           </select>
         </label>
-        <p class="hint" data-paper-hint="a5">Coloque papel A5 na impressora. O conteúdo é o mesmo do A4, reduzido.</p>
-        <p class="hint" data-paper-hint="a5x2">Cada folha A4 deitada leva duas páginas seguidas (1 e 2, 3 e 4…).
+        <p class="hint" data-orientation="landscape">Em paisagem, cada folha leva uma página.
+          Duas por folha e livreto ficam disponíveis na orientação retrato.</p>
+        <p class="hint" data-layout-hint="twoup">Cada folha deitada leva duas páginas seguidas (1 e 2, 3 e 4…).
           Depois de imprimir, corte as folhas ao meio.</p>
-        <p class="hint" data-paper-hint="booklet">Na impressão, as páginas são reorganizadas para a dobra.
+        <p class="hint" data-layout-hint="booklet">Na impressão, as páginas são reorganizadas para a dobra.
           Imprima em frente e verso virando na <strong>borda curta</strong>, dobre o maço ao meio e grampeie.
           A pré-visualização continua na ordem de leitura.</p>
-        <p class="hint" data-paper-hint="a5x2 booklet">Se faltarem páginas para completar a última folha,
+        <p class="hint" data-layout-hint="twoup booklet">Se faltarem páginas para completar a última folha,
           o planner ganha folhas de anotações no final.</p>
         <label class="field">
           <span>Margem extra de encadernação (0 a 15 mm)</span>
@@ -472,19 +520,19 @@
 
 <noscript><p class="noscript">Este gerador precisa de JavaScript ativado no navegador.</p></noscript>
 
-<script src="assets/vendor/sweetalert2.all.min.js?v=5"></script>
-<script src="assets/js/dialogs.js?v=5"></script>
-<script src="assets/js/i18n.js?v=5"></script>
-<script src="assets/js/config.js?v=5"></script>
-<script src="assets/js/calendar.js?v=5"></script>
-<script src="assets/js/pages.js?v=5"></script>
-<script src="assets/js/app.js?v=5"></script>
-<script src="assets/js/server.js?v=5"></script>
+<script src="assets/vendor/sweetalert2.all.min.js?v=6"></script>
+<script src="assets/js/dialogs.js?v=6"></script>
+<script src="assets/js/i18n.js?v=6"></script>
+<script src="assets/js/config.js?v=6"></script>
+<script src="assets/js/calendar.js?v=6"></script>
+<script src="assets/js/pages.js?v=6"></script>
+<script src="assets/js/app.js?v=6"></script>
+<script src="assets/js/server.js?v=6"></script>
 <script>
   // Confere se todos os scripts carregaram e são da mesma versão deste index.html.
   // Ao publicar uma versão nova, o número abaixo, os "?v=" acima e o PlannerBuild de cada script mudam juntos.
   (function () {
-    var BUILD = 5;
+    var BUILD = 6;
     var built = window.PlannerBuild || {};
     var ok = ['dialogs', 'i18n', 'config', 'calendar', 'pages', 'app', 'server'].every(function (name) {
       return built[name] === BUILD;
