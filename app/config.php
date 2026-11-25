@@ -21,6 +21,21 @@ define('DB_USER', $_ENV['DB_USER'] ?? '');
 define('DB_PASS', $_ENV['DB_PASS'] ?? '');
 define('APP_ENV', $_ENV['APP_ENV'] ?? 'production');
 
+// Controle de acesso
+define('APP_URL', rtrim($_ENV['APP_URL'] ?? '', '/'));                    // endereço público do planner
+define('AUTH_DOMAIN', mb_strtolower(trim($_ENV['AUTH_DOMAIN'] ?? 'scseduca.com.br')));
+define('AUTH_EXTRA_EMAILS', array_values(array_filter(array_map(
+    static fn (string $e): string => mb_strtolower(trim($e)),
+    explode(',', $_ENV['AUTH_EXTRA_EMAILS'] ?? '')
+))));
+define('GOOGLE_CLIENT_ID', trim($_ENV['GOOGLE_CLIENT_ID'] ?? ''));
+define('GOOGLE_CLIENT_SECRET', trim($_ENV['GOOGLE_CLIENT_SECRET'] ?? ''));
+define('GOOGLE_ISSUERS', ['https://accounts.google.com', 'accounts.google.com']);
+// Endereços do Google. Só podem ser trocados fora de produção, para testes automatizados.
+$testing = APP_ENV !== 'production';
+define('GOOGLE_AUTH_URL', $testing && !empty($_ENV['GOOGLE_AUTH_URL']) ? $_ENV['GOOGLE_AUTH_URL'] : 'https://accounts.google.com/o/oauth2/v2/auth');
+define('GOOGLE_TOKEN_URL', $testing && !empty($_ENV['GOOGLE_TOKEN_URL']) ? $_ENV['GOOGLE_TOKEN_URL'] : 'https://oauth2.googleapis.com/token');
+
 // Limites da aplicação
 define('MAX_CONFIG_BYTES', 5 * 1024 * 1024); // tamanho máximo de um modelo (inclui o logotipo)
 define('MAX_TEMPLATES_PER_USER', 50);

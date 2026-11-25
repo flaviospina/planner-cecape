@@ -3,7 +3,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).app = 6;
+  (global.PlannerBuild = global.PlannerBuild || {}).app = 7;
 
   var UI = global.PlannerUI;
   var Config = global.PlannerConfig;
@@ -507,6 +507,24 @@
   document.getElementById('btn-export').addEventListener('click', onExport);
   document.getElementById('btn-reset').addEventListener('click', onReset);
   document.getElementById('btn-print').addEventListener('click', onPrint);
+  // Sair: confirma antes de encerrar a sessão.
+  var logoutForm = document.getElementById('logout-form');
+  if (logoutForm) {
+    logoutForm.addEventListener('submit', function (event) {
+      if (logoutForm.dataset.confirmed === '1') { return; }
+      event.preventDefault();
+      UI.confirm({
+        title: 'Sair do planner?',
+        text: 'As opções desta tela continuam guardadas neste navegador.',
+        confirmText: 'Sair'
+      }).then(function (ok) {
+        if (ok) {
+          logoutForm.dataset.confirmed = '1';
+          logoutForm.submit();
+        }
+      });
+    });
+  }
   global.addEventListener('resize', fitPreview);
   // Vale também para Ctrl+P: as folhas A5 são montadas ao imprimir e desfeitas em seguida.
   global.addEventListener('beforeprint', imposeForPrint);

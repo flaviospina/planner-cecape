@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).config = 6;
+  (global.PlannerBuild = global.PlannerBuild || {}).config = 7;
 
   var STORAGE_KEY = 'planner_cecape_config_v1';
   var DEFAULT_LOGO = 'assets/img/logo-cecape.jpg';

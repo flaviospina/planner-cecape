@@ -5,7 +5,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).server = 6;
+  (global.PlannerBuild = global.PlannerBuild || {}).server = 7;
 
   var UI = global.PlannerUI;
   var MIN_PASSWORD = 8;
@@ -165,7 +165,7 @@
     paint();
     if (user && user.mustChangePassword) {
       return changePassword(true).then(function (changed) {
-        if (!changed) { return doLogout(true); }
+        if (!changed) { return doLogout(); }
         return refreshList();
       });
     }
@@ -196,23 +196,19 @@
     });
   }
 
-  function doLogout(silent) {
-    return api('logout.php', {}).then(function (res) {
-      if (res.ok) { csrf = res.data.csrf; }
-    }, function () {}).then(function () {
-      user = null;
-      items = [];
-      paint();
-      if (!silent) { UI.toast('success', 'Você saiu.'); }
+  // Sair encerra o acesso ao planner inteiro: a página volta para a tela de entrada.
+  function doLogout() {
+    return api('logout.php', {}).then(function () {}, function () {}).then(function () {
+      global.location.reload();
     });
   }
 
   function onLogout() {
     UI.confirm({
-      title: 'Sair?',
-      text: 'As opções desta tela continuam guardadas neste navegador.',
+      title: 'Sair do planner?',
+      text: 'Você voltará para a tela de entrada. As opções desta tela continuam guardadas neste navegador.',
       confirmText: 'Sair'
-    }).then(function (ok) { if (ok) { doLogout(false); } });
+    }).then(function (ok) { if (ok) { doLogout(); } });
   }
 
   function onLoad() {

@@ -2,6 +2,9 @@
 
 Options -Indexes
 
+# A porta de entrada é o index.php, que confere o login antes de entregar o gerador
+DirectoryIndex index.php
+
 # Arquivos que nunca devem ser servidos
 <FilesMatch "(^\.env|\.(sql|log|md|example)$)">
     Require all denied

@@ -6,6 +6,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 api_mode();
 start_session();
+api_require_access();
 api_require_post();
 $user = api_require_login(true);
 

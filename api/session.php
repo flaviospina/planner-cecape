@@ -6,6 +6,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 api_mode();
 start_session();
+api_require_access();
 
 $user = current_user();
 $installed = (int) Database::get()->query('SELECT COUNT(*) FROM users')->fetchColumn() > 0;

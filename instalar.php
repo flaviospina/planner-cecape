@@ -51,8 +51,7 @@ if (!$hasUsers && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         $st->execute(['name' => $name, 'email' => $email, 'hash' => password_hash($password, PASSWORD_DEFAULT)]);
         $id = (int) $pdo->lastInsertId();
         log_action($id, 'install_admin_created', $email);
-        session_regenerate_id(true);
-        $_SESSION['user_id'] = $id;
+        grant_access($email, $name, 'password', $id);
         flash('ok', 'Instalação concluída. Você já está conectado(a) como administrador(a).');
         redirect_to('usuarios.php');
     }

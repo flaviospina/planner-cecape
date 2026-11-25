@@ -10,6 +10,7 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/bootstrap.php';
 api_mode();
 start_session();
+api_require_access();
 
 /**
  * LGPD: os nomes de alunos não são guardados no servidor.

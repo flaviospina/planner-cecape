@@ -5,6 +5,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/config.php';
 require __DIR__ . '/Database.php';
+require __DIR__ . '/auth.php';
 
 // ----- Respostas -----
 
@@ -37,8 +38,8 @@ function api_mode(): void
         }
         json_response(false, null, 'Ocorreu um erro interno. Tente novamente em instantes.', 500);
     });
-    if (!ENV_FILE_EXISTS || DB_NAME === '') {
-        json_response(false, null, 'O servidor ainda não foi configurado (arquivo .env).', 503);
+    if (!has_database()) {
+        json_response(false, null, 'Os modelos no servidor não estão ativados nesta instalação.', 503);
     }
 }
 

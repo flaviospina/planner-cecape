@@ -90,6 +90,8 @@ body {
 }
 .lang select:focus { outline: 3px solid #8fc3cf; border-color: var(--ui-teal); }
 .page-count { color: var(--ui-muted); font-size: 13px; }
+.account { display: flex; align-items: center; gap: 8px; margin: 0; }
+.account-name { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 600; color: var(--ui-navy); }
 
 /* ---------- Botões ---------- */
 .btn {

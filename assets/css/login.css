@@ -1,0 +1,37 @@
+/* assets/css/login.css
+ * Tela de entrada do planner.
+ */
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.login {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px 28px 24px;
+  background: #fff;
+  border: 1px solid var(--ui-line);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(21, 43, 69, .12), 0 12px 32px rgba(21, 43, 69, .10);
+}
+.login-logo { display: block; width: 230px; max-width: 80%; height: auto; margin: 0 0 18px; }
+.login .brand-bar { width: 72px; height: 6px; }
+.login h1 { margin: 16px 0 6px; font-size: 28px; line-height: 1.15; color: var(--ui-navy); }
+.login-lead { margin: 0 0 22px; color: var(--ui-muted); }
+.login-google { width: 100%; min-height: 48px; font-size: 16px; text-decoration: none; }
+.login .hint { margin: 8px 0 0; }
+.login .alert { margin: 0 0 16px; padding: 12px 14px; border-radius: 6px; border: 1px solid; }
+.login .alert-ok { border-color: #2c6e57; color: #1f4f3e; background: #eef7f2; }
+.login .alert-error { border-color: var(--ui-danger); color: #7a251d; background: #fbefed; }
+.login-other { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--ui-line); }
+.login-other summary { cursor: pointer; font-weight: 600; color: var(--ui-teal); }
+.login-other summary:focus-visible { outline: 3px solid #8fc3cf; outline-offset: 3px; }
+.login-other form { margin-top: 4px; }
+.login-other .btn { margin-top: 6px; }
+.login .field input {
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--ui-line);
+  border-radius: 6px;
+  font: inherit;
+}
+.login .field input:focus { outline: 3px solid #8fc3cf; border-color: var(--ui-teal); }
+.login-foot { margin: 22px 0 0; padding-top: 14px; border-top: 1px solid var(--ui-line); font-size: 12px; color: var(--ui-muted); }

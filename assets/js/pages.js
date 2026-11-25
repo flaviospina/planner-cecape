@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  (global.PlannerBuild = global.PlannerBuild || {}).pages = 6;
+  (global.PlannerBuild = global.PlannerBuild || {}).pages = 7;
 
   var Cal = global.PlannerCalendar;
 

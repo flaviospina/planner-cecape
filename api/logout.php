@@ -12,8 +12,6 @@ $user = current_user();
 if ($user) {
     log_action((int) $user['id'], 'logout');
 }
-$_SESSION = [];
-session_regenerate_id(true);
-$_SESSION['csrf'] = bin2hex(random_bytes(32));
+revoke_access();
 
 json_response(true, ['csrf' => csrf_token()], 'Você saiu.');
